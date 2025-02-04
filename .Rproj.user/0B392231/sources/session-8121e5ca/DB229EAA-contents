@@ -1,0 +1,59 @@
+library(tidyverse)
+library(googlesheets4)
+
+df <- read_sheet("1mWUWcjc_kWH6KHWMkEjK6AHNpnJU-8cSivw27f4bdE0", sheet = "cohorte_todas")
+
+df <- df |> 
+  filter(autorizo_uso == "Sí", autorizo_publicacion == "Sí") 
+
+lista_filtrado <- c("ninguna", "ninguno", "ninguna.", "ninguno.", "no lo se", "no lo sé", "no lo se.", "no lo sé.", "no se", "no sé", "no se.", "no sé.", "desconozco", "desconozco.")
+lista_filtrado2 <- c(".", "A")
+
+df <- df |> 
+  mutate(barreras_ES = ifelse(str_to_lower(barreras_ES) %in% lista_filtrado, NA, barreras_ES))
+
+df <- df |> 
+  mutate(publico_general_ES = ifelse(str_to_lower(publico_general_ES) %in% lista_filtrado, NA, publico_general_ES))
+
+df <- df |> 
+  mutate(publico_general_ES = ifelse(publico_general_ES %in% lista_filtrado2, NA, publico_general_ES)) |> 
+  mutate(barreras_ES = ifelse(barreras_ES %in% lista_filtrado2, NA, barreras_ES)) 
+
+df <- df |>
+  filter(!is.na(barreras_ES)|!is.na(publico_general_ES))
+
+library(tidytext)
+library(stopwords)
+
+df_tokenizada <- df |>
+  distinct(orcid, .keep_all = TRUE) |>
+  mutate(id = as.factor(orcid),
+         id = as.numeric(id)) |>
+  select(id, barreras_ES) |>
+  unnest_tokens(word, barreras_ES)
+
+
+stopwords_es <- stopwords(language = "es")
+
+df_filtrada <- df_tokenizada |>
+  filter(!(word %in% stopwords_es))
+
+df_filtrada |>
+  count(word, sort = TRUE)
+
+
+library(topicmodels)
+
+library(udpipe) # la cargamos
+modelo_sp <- udpipe::udpipe_download_model('spanish') # descarga el modelo y guarda la referencia  
+modelo_sp$file_model # refrencia al modelo descargado
+modelo_sp <- udpipe_load_model(file = modelo_sp$file_model) #
+
+df$id <- 1:nrow(df)
+
+respuestas_anotadas <- udpipe_annotate( 
+  object = modelo_sp, # el modelo de idioma
+  x = df$barreras_ES, # el texto a anotar, 
+  doc_id = df$id, # el id de cada oracion (el resultado tendrá 1 palabra x fila)
+  trace = 20
+) %>% as.data.frame(.)
