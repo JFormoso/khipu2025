@@ -1,0 +1,23 @@
+---
+title: "Consideraciones sobre la Ciencia Abierta de investigadores e investigadoras del sur global : un análisis desde herramientas de NLP"
+author: "Formoso, J., Nanton, M. C., Loto, P. A."
+format: html
+editor: visual
+execute: 
+  echo: true
+embed-resources: true
+---
+
+```{r}
+
+```
+
+
+
+## Análisis de frecuencias
+
+
+## Análisis de sentimiento
+
+
+## Modelado de tópicos

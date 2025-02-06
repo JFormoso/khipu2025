@@ -22,4 +22,7 @@ df <- df |>
   mutate(barreras_ES = ifelse(barreras_ES %in% lista_filtrado2, NA, barreras_ES)) 
 
 df <- df |>
-  filter(!is.na(barreras_ES)|!is.na(publico_general_ES))
+  filter(!is.na(barreras_ES)|!is.na(publico_general_ES)) |>
+  select(-email, -autorizo_publicacion, -autorizo_uso, -nombre, -apellido, -orcid, -comunidad_ES, -comunidad_IN, -comunidad_nombre_ES)
+
+write_sheet(df, ss = "1ZaaZFXhc9KfQgpWehNpl6Qyam-49O2nHS786fKrXFCw", sheet = "info_inscriptos")
