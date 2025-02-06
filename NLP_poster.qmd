@@ -9,7 +9,14 @@ embed-resources: true
 ---
 
 ```{r}
+# Paquetes
+library(tidyverse)
+library(tidytext)
+library(googlesheets4)
+library(topicmodels)
 
+# Datos
+datos <- read_sheet("1ZaaZFXhc9KfQgpWehNpl6Qyam-49O2nHS786fKrXFCw", sheet = "info_inscriptos")
 ```
 
 
