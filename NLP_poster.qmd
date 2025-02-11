@@ -14,17 +14,116 @@ library(tidyverse)
 library(tidytext)
 library(googlesheets4)
 library(topicmodels)
+library(tm)
 
 # Datos
 datos <- read_sheet("1ZaaZFXhc9KfQgpWehNpl6Qyam-49O2nHS786fKrXFCw", sheet = "info_inscriptos")
 ```
+## Procesamientos base
 
+Selección de preguntas abiertas
+
+```{r}
+texto_libre <- datos %>%  
+  select(interes_ES,
+         barreras_ES,
+         publico_general_ES)
+```
+
+
+### Tokenización
+
+```{r}
+tok_interes <- texto_libre %>%
+  select(interes_ES) %>% 
+  unnest_tokens(word, interes_ES) %>% 
+  mutate(document = "interes_ES")
+```
+
+```{r}
+tok_barreras <- texto_libre %>%
+  select(barreras_ES) %>% 
+  unnest_tokens(word, barreras_ES) %>% 
+  mutate(document = "barreras_ES")
+```
+
+```{r}
+tok_public <- texto_libre %>%
+  select(publico_general_ES) %>% 
+  unnest_tokens(word, publico_general_ES)  %>% 
+  mutate(document = "publico_general_ES")
+```
+
+```{r}
+tok_all <- texto_libre %>% 
+  pivot_longer(cols = interes_ES:publico_general_ES,
+               values_to = "text") %>% 
+  rename(document = name) %>% 
+  unnest_tokens(word, text)
+```
+
+
+### Conteo de frecuencias
+
+```{r}
+tok_c_interes <- tok_interes %>% count(document, word)
+
+tok_c_barreras <- tok_barreras %>% count(document, word)
+
+tok_c_public <- tok_public %>% count(document, word)
+
+tok_c_all <- tok_all %>% count(document, word)
+```
+
+
+### DTM
+
+```{r}
+dtm_interes <- tok_c_interes %>% 
+  cast_dtm(document, word, n)
+
+dtm_barreras <- tok_c_barreras %>% 
+  cast_dtm(document, word, n)
+
+dtm_public <- tok_c_public %>% 
+  cast_dtm(document, word, n)
+
+dtm_all <- tok_c_all %>% 
+  cast_dtm(document, word, n)
+```
 
 
 ## Análisis de frecuencias
 
-
 ## Análisis de sentimiento
 
-
 ## Modelado de tópicos
+
+
+
+DTM
+
+```{r}
+dt_completo
+
+dt_interes
+
+dt_barreras
+
+dt_publico
+```
+
+### LDA
+
+Requiere formato tidy: a table with one-token-per-document-per-row, such as is constructed by the [`unnest_tokens()`](https://juliasilge.github.io/tidytext/reference/unnest_tokens.html) function
+
+
+
+#### DTM
+
+```{r}
+dmt_interes <- tok_interes %>% 
+  cast_dtm()
+
+
+```
