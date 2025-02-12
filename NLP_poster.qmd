@@ -95,6 +95,88 @@ dtm_all <- tok_c_all %>%
 
 ## Análisis de frecuencias
 
+```{r}
+variable_palabras <- texto_libre |>
+  mutate(id = 1:nrow(texto_libre)) |>
+  pivot_longer(cols = -id,
+               names_to = "variable",
+               values_to = "text") |>
+  unnest_tokens(word, text) |>
+  filter(!word %in% stopwords("es")) |>
+  count(variable, word, sort = TRUE)
+
+total_palabras <- variable_palabras %>% 
+  group_by(variable) %>% 
+  summarize(total = sum(n))
+
+variable_palabras <- left_join(variable_palabras, total_palabras)
+
+variable_palabras
+
+```
+
+```{r}
+variable_palabras |>
+  ggplot(aes(n/total, fill = variable)) +
+  geom_histogram(show.legend = FALSE) +
+  xlim(NA, 0.0009) +
+  facet_wrap(~variable, ncol = 2, scales = "free_y")
+```
+```{r}
+freq_by_rank <- variable_palabras %>% 
+  group_by(variable) %>% 
+  mutate(rank = row_number(), 
+         term_frequency = n/total) %>%
+  ungroup()
+
+freq_by_rank
+```
+```{r}
+freq_by_rank %>% 
+  ggplot(aes(rank, term_frequency, color = variable)) + 
+  geom_line(linewidth = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+```{r}
+rank_subset <- freq_by_rank %>% 
+  filter(rank < 500,
+         rank > 10)
+
+lm(log10(term_frequency) ~ log10(rank), data = rank_subset)
+```
+
+```{r}
+freq_by_rank %>% 
+  ggplot(aes(rank, term_frequency, color = variable)) + 
+  geom_abline(intercept = -0.62, slope = -1.1, 
+              color = "gray50", linetype = 2) +
+  geom_line(linewidth = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+```{r}
+tf_idf <- variable_palabras %>%
+  bind_tf_idf(word, variable, n)
+
+tf_idf |>
+  select(-total) |>
+  arrange(desc(tf_idf))
+```
+```{r}
+tf_idf %>%
+  group_by(variable) %>%
+  slice_max(tf_idf, n = 15) %>%
+  ungroup() %>%
+  ggplot(aes(tf_idf, fct_reorder(word, tf_idf), fill = variable)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~variable, ncol = 2, scales = "free") +
+  labs(x = "tf-idf", y = NULL)
+```
+
+
+
 ## Análisis de sentimiento
 
 ## Modelado de tópicos
