@@ -196,8 +196,6 @@ tf_idf %>%
   labs(x = "tf-idf", y = NULL)
 ```
 
-
-
 ## ANALISIS DE SENTIMIENTO
 
 ```{r}
@@ -278,7 +276,6 @@ emocion.df3
 
 ```
 
-
 ```{r}
 library("RColorBrewer")
 
@@ -320,11 +317,8 @@ nube_emociones_vector <- iconv(nube_emociones_vector, "latin1", "UTF-8")
 nube_corpus <- Corpus(VectorSource(nube_emociones_vector))
 ```
 
-```{r}
-# revisar este análisis
+```{}
 ```
-
-
 
 ## Modelado de tópicos
 
