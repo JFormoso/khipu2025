@@ -19,6 +19,7 @@ library(tm)
 # Datos
 datos <- read_sheet("1ZaaZFXhc9KfQgpWehNpl6Qyam-49O2nHS786fKrXFCw", sheet = "info_inscriptos")
 ```
+
 ## Procesamientos base
 
 Selección de preguntas abiertas
@@ -30,13 +31,13 @@ texto_libre <- datos %>%
          publico_general_ES)
 ```
 
-
 ### Tokenización
 
 ```{r}
 tok_interes <- texto_libre %>%
   select(interes_ES) %>% 
   unnest_tokens(word, interes_ES) %>% 
+  filter(!word %in% stopwords("es")) %>% 
   mutate(document = "interes_ES")
 ```
 
@@ -44,6 +45,7 @@ tok_interes <- texto_libre %>%
 tok_barreras <- texto_libre %>%
   select(barreras_ES) %>% 
   unnest_tokens(word, barreras_ES) %>% 
+  filter(!word %in% stopwords("es")) %>% 
   mutate(document = "barreras_ES")
 ```
 
@@ -51,6 +53,7 @@ tok_barreras <- texto_libre %>%
 tok_public <- texto_libre %>%
   select(publico_general_ES) %>% 
   unnest_tokens(word, publico_general_ES)  %>% 
+  filter(!word %in% stopwords("es")) %>% 
   mutate(document = "publico_general_ES")
 ```
 
@@ -59,9 +62,9 @@ tok_all <- texto_libre %>%
   pivot_longer(cols = interes_ES:publico_general_ES,
                values_to = "text") %>% 
   rename(document = name) %>% 
-  unnest_tokens(word, text)
+  unnest_tokens(word, text) %>% 
+  filter(!word %in% stopwords("es"))
 ```
-
 
 ### Conteo de frecuencias
 
@@ -74,7 +77,6 @@ tok_c_public <- tok_public %>% count(document, word)
 
 tok_c_all <- tok_all %>% count(document, word)
 ```
-
 
 ### DTM
 
@@ -91,7 +93,6 @@ dtm_public <- tok_c_public %>%
 dtm_all <- tok_c_all %>% 
   cast_dtm(document, word, n)
 ```
-
 
 ## Análisis de frecuencias
 
@@ -117,6 +118,7 @@ tok_c_all_sw |>
   xlim(NA, 0.0009) +
   facet_wrap(~document, ncol = 2, scales = "free_y")
 ```
+
 ```{r}
 
 freq_by_rank <- tok_c_all_sw %>% 
@@ -127,6 +129,7 @@ freq_by_rank <- tok_c_all_sw %>%
 
 freq_by_rank
 ```
+
 ```{r}
 freq_by_rank %>% 
   ggplot(aes(rank, term_frequency, color = document)) + 
@@ -152,6 +155,7 @@ freq_by_rank %>%
   scale_x_log10() +
   scale_y_log10()
 ```
+
 ```{r}
 tf_idf <- tok_c_all_sw %>%
   bind_tf_idf(word, document, n)
@@ -160,6 +164,7 @@ tf_idf |>
   select(-total) |>
   arrange(desc(tf_idf))
 ```
+
 ```{r}
 tf_idf %>%
   group_by(document) %>%
@@ -171,37 +176,133 @@ tf_idf %>%
   labs(x = "tf-idf", y = NULL)
 ```
 
-
-
 ## Análisis de sentimiento
 
 ## Modelado de tópicos
-
-
-
-DTM
-
-```{r}
-dt_completo
-
-dt_interes
-
-dt_barreras
-
-dt_publico
-```
 
 ### LDA
 
 Requiere formato tidy: a table with one-token-per-document-per-row, such as is constructed by the [`unnest_tokens()`](https://juliasilge.github.io/tidytext/reference/unnest_tokens.html) function
 
-
-
-#### DTM
+#### All
 
 ```{r}
-dmt_interes <- tok_interes %>% 
-  cast_dtm()
+lda_all <- LDA(dtm_all, k = 2, control = list(seed = 1234))
+topics_all <- tidy(lda_all)
+```
 
+```{r}
+all_top_terms <- topics_all %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
 
+all_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+```{r}
+beta_wide_all <- topics_all %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+beta_wide_all
+```
+
+#### Barreras
+
+```{r}
+lda_barreras <- LDA(dtm_barreras, k = 2, control = list(seed = 1234))
+topics_barreras <- tidy(lda_barreras)
+```
+
+```{r}
+barreras_top_terms <- topics_barreras %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+barreras_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+beta_wide_barreras <- topics_barreras %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+beta_wide_barreras
+```
+
+#### Interes
+
+```{r}
+lda_interes <- LDA(dtm_interes, k = 2, control = list(seed = 1234))
+topics_interes <- tidy(lda_interes)
+```
+
+```{r}
+interes_top_terms <- topics_interes %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+interes_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+beta_wide_interes <- topics_interes %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+beta_wide_interes
+```
+
+#### Public
+
+```{r}
+lda_public <- LDA(dtm_public, k = 2, control = list(seed = 1234))
+topics_public <- tidy(lda_public)
+```
+
+```{r}
+public_top_terms <- topics_public %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+public_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+beta_wide_public <- topics_public %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+beta_wide_public
 ```
