@@ -90,7 +90,6 @@ tok_all <- texto_libre %>%
 tok_all %>% glimpse()
 ```
 
-
 ### Conteo de frecuencias
 
 ```{r}
@@ -201,9 +200,6 @@ tf_idf %>%
   labs(x = "tf-idf", y = NULL)
 ```
 
-
-
-
 ## ANALISIS DE SENTIMIENTO
 
 ```{r}
@@ -228,7 +224,6 @@ library(syuzhet)
 
 tok_all_sin_sw <- tok_all |>
   filter(!word %in% stopwords("es")) 
-
 
 tok_all_sin_sw %>% glimpse()
 
@@ -284,7 +279,6 @@ emocion.df3
 
 ```
 
-
 ```{r}
 library("RColorBrewer")
 
@@ -309,25 +303,6 @@ sentimientos1
 
 ```
 
-```{r}
-nube_emociones_vector <- c(
-  paste(palabra.df[emocion.df3$sadness> 0], collapse = " "),
-  paste(palabra.df[emocion.df3$joy > 0], collapse = " "),
-  paste(palabra.df[emocion.df3$anger > 0], collapse = " "),
-  paste(palabra.df[emocion.df3$fear > 0], collapse = " "))
-
-nube_emociones_vector <- iconv(nube_emociones_vector, "latin1", "UTF-8")
-```
-
-```{r}
-nube_corpus <- Corpus(VectorSource(nube_emociones_vector))
-```
-
-```{r}
-# revisar este análisis
-```
-
-
 
 ## Modelado de tópicos
 
@@ -337,7 +312,6 @@ DTM
 lda_all <- LDA(dtm_all, k = 2, control = list(seed = 1234))
 topics_all <- tidy(lda_all)
 ```
-
 
 ```{r}
 all_top_terms <- topics_all %>%
@@ -353,6 +327,7 @@ all_top_terms %>%
   facet_wrap(~ topic, scales = "free") +
   scale_y_reordered()
 ```
+
 ```{r}
 beta_wide_all <- topics_all %>%
   mutate(topic = paste0("topic", topic)) %>%
@@ -428,7 +403,6 @@ beta_wide_interes
 ```
 
 #### Public
-
 
 ```{r}
 lda_public <- LDA(dtm_public, k = 2, control = list(seed = 1234))
