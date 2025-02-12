@@ -79,13 +79,12 @@ tok_public %>% glimpse()
 
 ```{r}
 # todo el texto junto
-
 tok_all <- texto_libre %>% 
   pivot_longer(cols = interes_ES:publico_general_ES,
                values_to = "text") %>% 
   rename(document = name) %>% 
-
-  unnest_tokens(word, text)
+  unnest_tokens(word, text) %>% 
+  filter(!word %in% stopwords("es"))
 
 tok_all %>% glimpse()
 ```
