@@ -16,6 +16,11 @@ library(googlesheets4)
 library(topicmodels)
 library(tm)
 
+
+```
+
+```{r}
+
 # Datos
 datos <- read_sheet("1ZaaZFXhc9KfQgpWehNpl6Qyam-49O2nHS786fKrXFCw", sheet = "info_inscriptos")
 ```
@@ -34,36 +39,54 @@ texto_libre <- datos %>%
 ### Tokenización
 
 ```{r}
+# tok_interes: campo con interes por ciencia abierta 
+
+
 tok_interes <- texto_libre %>%
   select(interes_ES) %>% 
   unnest_tokens(word, interes_ES) %>% 
   filter(!word %in% stopwords("es")) %>% 
   mutate(document = "interes_ES")
+
+tok_interes %>% glimpse()
 ```
 
 ```{r}
+# tok_barreras: campo con barreras encontradas en ciencia abierta 
+
 tok_barreras <- texto_libre %>%
   select(barreras_ES) %>% 
   unnest_tokens(word, barreras_ES) %>% 
   filter(!word %in% stopwords("es")) %>% 
   mutate(document = "barreras_ES")
+
+tok_barreras %>% glimpse()
 ```
 
 ```{r}
+
+# tok_public:campo con incidencia de ciencia abierta en publico en general
+
 tok_public <- texto_libre %>%
   select(publico_general_ES) %>% 
   unnest_tokens(word, publico_general_ES)  %>% 
   filter(!word %in% stopwords("es")) %>% 
   mutate(document = "publico_general_ES")
+
+
+tok_public %>% glimpse()
 ```
 
 ```{r}
+# todo el texto junto
 tok_all <- texto_libre %>% 
   pivot_longer(cols = interes_ES:publico_general_ES,
                values_to = "text") %>% 
   rename(document = name) %>% 
   unnest_tokens(word, text) %>% 
   filter(!word %in% stopwords("es"))
+
+tok_all %>% glimpse()
 ```
 
 ### Conteo de frecuencias
@@ -176,15 +199,113 @@ tf_idf %>%
   labs(x = "tf-idf", y = NULL)
 ```
 
-## Análisis de sentimiento
+## ANALISIS DE SENTIMIENTO
+
+```{r}
+install.packages(c("udpipe"))
+install.packages("syuzhet")
+library(udpipe)
+library(syuzhet)
+```
+
+```{r}
+# tok_all <- texto_libre %>% 
+#   pivot_longer(cols = interes_ES:publico_general_ES,
+#                values_to = "text") %>% 
+#   rename(document = name) %>% 
+#   unnest_tokens(word, text)
+# 
+# tok_all %>% glimpse()
+```
+
+```{r}
+# elimino las stopwords
+
+tok_all_sin_sw <- tok_all |>
+  filter(!word %in% stopwords("es")) 
+
+tok_all_sin_sw %>% glimpse()
+
+```
+
+```{r}
+palabra.df <- as.vector(tok_all_sin_sw$word)
+palabra.df
+```
+
+```{r}
+# La función get_nrc_sentiments() nos permite obtener léxicos de sentimientos específicos
+
+sentimientos_df <- get_nrc_sentiment(palabra.df, lang="spanish")
+```
+
+```{r}
+
+#Unimos sentimientos_df con el vector de palabras  para ver como
+#trabajó la función get_nrc_sentiment en cada una de ellas
+
+
+df2 <- cbind(palabra.df, sentimientos_df)
+head(df2)
+
+#Creamos un data frame en el cual las filas serán las emociones
+#y las columnas los puntajes totales
+
+#Empezamos transponiendo sentimientos_df
+emocion.df3 <- data.frame(t(sentimientos_df))
+emocion.df3
+
+#Sumamos los puntajes de cada emocion
+emocion.df3 <- data.frame(rowSums(emocion.df3))
+
+#Nombramos la columna de puntajes como total
+names(emocion.df3)[1] <- "total"
+
+
+
+#Dado que las emociones son los nombres de las filas y no una variable
+#transformamos el data frame para incluirlas dentro
+emocion.df3 <- cbind("sentimiento" = rownames(emocion.df3), emocion.df3)
+emocion.df3
+#Quitamos el nombre de las filas
+rownames(emocion.df3) <- NULL
+
+#Verificamos el data frame
+print(emocion.df3)
+emocion.df3
+
+
+
+```
+
+```{r}
+library("RColorBrewer")
+
+sentimientos1 <- ggplot(emocion.df3[1:8,],
+                        aes(x = sentimiento,
+                            y = total, fill = sentimiento)) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Análisis de sentimiento",
+       x = "Sentimiento", y = " ")+
+  geom_text(aes(label = total),
+            vjust = 1.5, color = "black",
+            size =4) +
+  theme_minimal() + scale_fill_brewer(palette = "Paired") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14,face = "bold"),
+        title = element_text(size=20,face = "bold"),
+        legend.position = "none") 
+        
+  
+sentimientos1 
+
+```
+
 
 ## Modelado de tópicos
 
-### LDA
-
-Requiere formato tidy: a table with one-token-per-document-per-row, such as is constructed by the [`unnest_tokens()`](https://juliasilge.github.io/tidytext/reference/unnest_tokens.html) function
-
-#### All
+DTM
 
 ```{r}
 lda_all <- LDA(dtm_all, k = 2, control = list(seed = 1234))
@@ -205,6 +326,7 @@ all_top_terms %>%
   facet_wrap(~ topic, scales = "free") +
   scale_y_reordered()
 ```
+
 ```{r}
 beta_wide_all <- topics_all %>%
   mutate(topic = paste0("topic", topic)) %>%
@@ -258,6 +380,9 @@ interes_top_terms <- topics_interes %>%
   slice_max(beta, n = 10) %>% 
   ungroup() %>%
   arrange(topic, -beta)
+
+
+#### DTM
 
 interes_top_terms %>%
   mutate(term = reorder_within(term, beta, topic)) %>%
