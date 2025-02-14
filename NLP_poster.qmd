@@ -15,6 +15,9 @@ library(tidytext)
 library(googlesheets4)
 library(topicmodels)
 library(tm)
+library(udpipe)
+library(syuzhet)
+
 
 
 ```
@@ -199,23 +202,17 @@ tf_idf %>%
   labs(x = "tf-idf", y = NULL)
 ```
 
-## ANALISIS DE SENTIMIENTO
+## Análisis de sentimiento
 
 ```{r}
-install.packages(c("udpipe"))
-install.packages("syuzhet")
-library(udpipe)
-library(syuzhet)
-```
 
-```{r}
-# tok_all <- texto_libre %>% 
-#   pivot_longer(cols = interes_ES:publico_general_ES,
-#                values_to = "text") %>% 
-#   rename(document = name) %>% 
-#   unnest_tokens(word, text)
-# 
-# tok_all %>% glimpse()
+tok_all <- texto_libre %>%
+  pivot_longer(cols = interes_ES:publico_general_ES,
+               values_to = "text") %>%
+  rename(document = name) %>%
+  unnest_tokens(word, text)
+
+tok_all %>% glimpse()
 ```
 
 ```{r}
@@ -237,6 +234,7 @@ palabra.df
 # La función get_nrc_sentiments() nos permite obtener léxicos de sentimientos específicos
 
 sentimientos_df <- get_nrc_sentiment(palabra.df, lang="spanish")
+sentimientos_df
 ```
 
 ```{r}
