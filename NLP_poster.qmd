@@ -18,7 +18,9 @@ library(tm)
 library(udpipe)
 library(syuzhet)
 
-
+quitar_tildes <- function(str) {
+  return(stringi::stri_trans_general(str, "Latin-ASCII"))
+}
 
 ```
 
@@ -26,6 +28,14 @@ library(syuzhet)
 
 # Datos
 datos <- read_sheet("1ZaaZFXhc9KfQgpWehNpl6Qyam-49O2nHS786fKrXFCw", sheet = "info_inscriptos")
+
+datos <- datos |> filter(
+  (is.na(interes_ES) | interes_ES != "Interesse na ciência aberta.") &
+  (is.na(barreras_ES) | !str_detect(barreras_ES, "that will limit us to work openly, in those NDA they mention"))
+)
+
+
+
 ```
 
 ## Procesamientos base
@@ -37,6 +47,10 @@ texto_libre <- datos %>%
   select(interes_ES,
          barreras_ES,
          publico_general_ES)
+
+datos$interes_ES <- quitar_tildes(datos$interes_ES)
+datos$publico_general_ES <- quitar_tildes(datos$publico_general_ES)
+datos$barreras_ES <- quitar_tildes(datos$barreras_ES)
 ```
 
 ### Tokenización
@@ -91,6 +105,24 @@ tok_all <- texto_libre %>%
 
 tok_all %>% glimpse()
 ```
+### Eliminar Ciencia Abierta de la tokenización
+
+```{r}
+
+tok_barreras_sin_CA <- tok_barreras |> 
+  filter(!word %in% c("ciencia", "abierta"))
+
+tok_interes_sin_CA <- tok_interes |> 
+  filter(!word %in% c("ciencia", "abierta"))
+
+tok_public_sin_CA <- tok_public |> 
+  filter(!word %in% c("ciencia", "abierta"))
+
+tok_all_sin_CA <- tok_all |> 
+  filter(!word %in% c("ciencia", "abierta"))
+
+```
+
 
 ### Conteo de frecuencias
 
@@ -299,7 +331,6 @@ sentimientos1 <- ggplot(emocion.df3[1:8,],
 sentimientos1 
 
 ```
-
 
 ## Modelado de tópicos
 

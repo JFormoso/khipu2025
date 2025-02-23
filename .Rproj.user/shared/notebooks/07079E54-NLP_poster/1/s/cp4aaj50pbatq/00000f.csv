@@ -1,7 +1,0 @@
-"0","# Datos
-datos <- read_sheet(""1ZaaZFXhc9KfQgpWehNpl6Qyam-49O2nHS786fKrXFCw"", sheet = ""info_inscriptos"")
-"
-"2","[32m✔[39m Reading from [36mKhipu2025[39m.
-"
-"2","[32m✔[39m Range '[33m'info_inscriptos'[39m'.
-"
