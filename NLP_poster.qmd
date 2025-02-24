@@ -259,11 +259,6 @@ tf_idf %>%
 ## Análisis de sentimiento
 
 ```{r}
-# tok_all %>% glimpse()
-```
-
-
-```{r}
 
 tok_all <- texto_libre %>%
   pivot_longer(cols = interes_ES:publico_general_ES,
@@ -282,7 +277,8 @@ tok_all_sin_sw <- tok_all |>
   filter(!word %in% ("ciencia")) |>
    filter(!word %in% ("abierta")) |>
    filter(!word %in% ("7")) |>
-   filter(!word %in% ("NA"))
+   filter(!word %in% ("NA")) |>
+   filter(!is.na(word))
      
 
   
@@ -658,18 +654,64 @@ palabra.publico.df
 
 ```{r}
 # La función get_nrc_sentiments() aplicada solo a barreras
-sentimientos_df <- get_nrc_sentiment(palabra.publico.df, lang="spanish")
-sentimientos_df |> glimpse()
+sentimientos_publico_df <- get_nrc_sentiment(palabra.publico.df, lang="spanish")
+sentimientos_publico_df |> glimpse()
 ```
 
+
+```{r}
+
+#Unimos el df de sentimientos de interes con el vector de palabras  para ver como
+#se aplicó la función get_nrc_sentiment en cada una de ellas
+
+
+df_publico_sent <- cbind(palabra.publico.df, sentimientos_publico_df)
+head(df_publico_sent)
+
+#Creamos un data frame en el cual las filas serán las emociones
+#y las columnas los puntajes totales
+
+#Empezamos transponiendo sentimientos_df
+emocion.publico.df <- data.frame(t(sentimientos_publico_df))
+emocion.publico.df
+
+#Sumamos los puntajes de cada emocion
+emocion.publico.df <- data.frame(rowSums(emocion.publico.df))
+
+#Nombramos la columna de puntajes como total
+names(emocion.publico.df)[1] <- "total"
+
+
+
+#Dado que las emociones son los nombres de las filas y no una variable
+#transformamos el data frame para incluirlas dentro
+emocion.publico.df <- cbind("sentimiento" = rownames(emocion.publico.df), emocion.publico.df)
+emocion.publico.df
+
+#Quitamos el nombre de las filas
+rownames(emocion.publico.df) <- NULL
+
+#Verificamos el data frame
+print(emocion.publico.df)
+emocion.publico.df
+
+
+```
 
 ```{r}
 #grafico de sentimientos de publico
 
+
+
 ```
+
 
 ```{r}
 #grafico de sentimientos de publico: positivo/negativo
+
+
+
+
 
 ```
 
