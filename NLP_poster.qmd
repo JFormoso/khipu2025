@@ -27,7 +27,7 @@ quitar_tildes <- function(str) {
 ```{r}
 
 # Datos
-datos <- read_sheet("1ZaaZFXhc9KfQgpWehNpl6Qyam-49O2nHS786fKrXFCw", sheet = "info_inscriptos")
+datos <- read_sheet("1vvWC52QmhQNRTOrueGP9FtBDeGOwBDr-t95fb34gwGk", sheet = "info_inscriptos")
 
 datos <- datos |> 
   filter(
