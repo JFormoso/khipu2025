@@ -1,4 +1,4 @@
----
+2---
 title: "Consideraciones sobre la Ciencia Abierta de investigadores e investigadoras del sur global : un análisis desde herramientas de NLP"
 author: "Formoso, J., Nanton, M. C., Loto, P. A."
 format: html
@@ -106,7 +106,6 @@ tok_all %>% glimpse()
 
 ```
 
-
 ## Obtener el lema o forma canónica de la palabra
 
 ```{r}
@@ -145,8 +144,6 @@ tok_all <- tok_all |>
 
 ```
 
-
-
 ### Conteo de frecuencias
 
 ```{r}
@@ -159,8 +156,6 @@ tok_c_public <- tok_public %>% count(document, word)
 tok_c_all <- tok_all %>% count(document, word)
 
 ```
-
-
 
 ### DTM
 
@@ -263,6 +258,11 @@ tf_idf %>%
 ## Análisis de sentimiento
 
 ```{r}
+tok_all %>% glimpse()
+```
+
+
+```{r}
 
 tok_all <- texto_libre %>%
   pivot_longer(cols = interes_ES:publico_general_ES,
@@ -270,7 +270,7 @@ tok_all <- texto_libre %>%
   rename(document = name) %>%
   unnest_tokens(word, text)
 
-tok_all %>% glimpse()
+tok_all |> glimpse()
 ```
 
 ```{r}
@@ -279,7 +279,7 @@ tok_all %>% glimpse()
 tok_all_sin_sw <- tok_all |>
   filter(!word %in% stopwords("es")) 
 
-tok_all_sin_sw %>% glimpse()
+tok_all_sin_sw |> glimpse()
 
 ```
 
@@ -292,13 +292,13 @@ palabra.df
 # La función get_nrc_sentiments() nos permite obtener léxicos de sentimientos específicos
 
 sentimientos_df <- get_nrc_sentiment(palabra.df, lang="spanish")
-sentimientos_df
+sentimientos_df |> glimpse()
 ```
 
 ```{r}
 
 #Unimos sentimientos_df con el vector de palabras  para ver como
-#trabajó la función get_nrc_sentiment en cada una de ellas
+#se aplicó la función get_nrc_sentiment en cada una de ellas
 
 
 df2 <- cbind(palabra.df, sentimientos_df)
@@ -323,6 +323,7 @@ names(emocion.df3)[1] <- "total"
 #transformamos el data frame para incluirlas dentro
 emocion.df3 <- cbind("sentimiento" = rownames(emocion.df3), emocion.df3)
 emocion.df3
+
 #Quitamos el nombre de las filas
 rownames(emocion.df3) <- NULL
 
@@ -357,6 +358,31 @@ sentimientos1 <- ggplot(emocion.df3[1:8,],
 sentimientos1 
 
 ```
+
+
+
+
+
+```{r}
+# análisis de Interes
+
+```
+
+
+```{r}
+# análisis de Barreras
+```
+
+
+```{r}
+# análisis de publico 
+
+```
+
+
+
+
+
 
 ## Modelado de tópicos
 
