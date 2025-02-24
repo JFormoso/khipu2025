@@ -258,7 +258,7 @@ tf_idf %>%
 ## Análisis de sentimiento
 
 ```{r}
-tok_all %>% glimpse()
+# tok_all %>% glimpse()
 ```
 
 
@@ -282,6 +282,7 @@ tok_all_sin_sw <- tok_all |>
 tok_all_sin_sw |> glimpse()
 
 ```
+
 
 ```{r}
 palabra.df <- as.vector(tok_all_sin_sw$word)
@@ -364,22 +365,60 @@ sentimientos1
 
 
 ```{r}
-# análisis de Interes
+# análisis de sentimiento de la sección Interes
+
+
+interes.df <- tok_all_sin_sw %>% filter(document== 'interes_ES')
+interes.df %>% glimpse()
+```
+
+
+
+
+```{r}
+# tomo solo las palabras sin la etiqueta de interes
+palabra.interes.df <- as.vector(interes.df$word)
+palabra.interes.df
+
+```
+
+
+
+
+
+
+
+
+
+```{r}
+# análisis de sentimiento de la sección Barreras
+
+barreras.df <- tok_all_sin_sw %>% filter(document== 'barreras_ES')
+barreras.df %>% glimpse()
+
+```
+```{r}
+
+# tomo solo las palabras sin la etiqueta de barreras
+palabra.barreras.df <- as.vector(barreras.df$word)
+palabra.barreras.df
+```
+
+
+```{r}
+# análisis de sentimiento de la sección publico 
+publico.df <- tok_all_sin_sw %>% filter(document== 'publico_general_ES')
+publico.df %>% glimpse()
 
 ```
 
 
 ```{r}
-# análisis de Barreras
-```
-
-
-```{r}
-# análisis de publico 
+# tomo solo las palabras sin la etiqueta de publico 
+palabra.publico.df <- as.vector(publico.df$word)
+palabra.publico.df
 
 ```
-
-
 
 
 
