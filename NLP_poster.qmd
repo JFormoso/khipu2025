@@ -280,7 +280,9 @@ tok_all |> glimpse()
 tok_all_sin_sw <- tok_all |>
   filter(!word %in% stopwords("es")) |>
   filter(!word %in% ("ciencia")) |>
-   filter(!word %in% ("abierta")) 
+   filter(!word %in% ("abierta")) |>
+   filter(!word %in% ("7")) |>
+   filter(!word %in% ("NA"))
      
 
   
@@ -469,7 +471,7 @@ sentimientos_interes <- ggplot(emocion.interes.df[1:8,],
                         aes(x = sentimiento,
                             y = total, fill = sentimiento)) + 
   geom_bar(stat = "identity") +
-  labs(title = "Análisis de sentimiento",
+  labs(title = "Análisis de sentimiento de interes",
        x = "Sentimiento", y = " ")+
   geom_text(aes(label = total),
             vjust = 1.5, color = "black",
@@ -497,7 +499,7 @@ sentimientos_interes <- ggplot(emocion.interes.df[9:10,],
                         aes(x = sentimiento,
                             y = total, fill = sentimiento)) + 
   geom_bar(stat = "identity") +
-  labs(title = "Análisis de sentimiento",
+  labs(title = "Análisis de sentimiento positivo/negativo",
        x = "Sentimiento", y = " ")+
   geom_text(aes(label = total),
             vjust = 1.5, color = "black",
@@ -541,8 +543,97 @@ palabra.barreras.df
 ```{r}
 
 # La función get_nrc_sentiments() aplicada solo a barreras
-sentimientos_df <- get_nrc_sentiment(barreras.df, lang="spanish")
-sentimientos_df |> glimpse()
+sentimientos_bar_df <- get_nrc_sentiment(palabra.barreras.df, lang="spanish")
+sentimientos_bar_df |> glimpse()
+```
+
+
+```{r}
+#Unimos el df de sentimientos de interes con el vector de palabras  para ver como
+#se aplicó la función get_nrc_sentiment en cada una de ellas
+
+
+df_barrera_sent <- cbind(palabra.barreras.df, sentimientos_bar_df)
+head(df_barrera_sent)
+
+#Creamos un data frame en el cual las filas serán las emociones
+#y las columnas los puntajes totales
+
+#Empezamos transponiendo sentimientos_df
+emocion.barrera.df <- data.frame(t(sentimientos_bar_df))
+emocion.barrera.df
+
+#Sumamos los puntajes de cada emocion
+emocion.barrera.df <- data.frame(rowSums(emocion.barrera.df))
+
+#Nombramos la columna de puntajes como total
+names(emocion.barrera.df)[1] <- "total"
+
+
+
+#Dado que las emociones son los nombres de las filas y no una variable
+#transformamos el data frame para incluirlas dentro
+emocion.barrera.df <- cbind("sentimiento" = rownames(emocion.barrera.df), emocion.barrera.df)
+emocion.barrera.df
+
+#Quitamos el nombre de las filas
+rownames(emocion.barrera.df) <- NULL
+
+#Verificamos el data frame
+print(emocion.barrera.df)
+emocion.barrera.df
+
+```
+
+
+```{r}
+#grafico de sentimientos de barreras
+
+sentimientos_barrera <- ggplot(emocion.barrera.df[1:8,],
+                        aes(x = sentimiento,
+                            y = total, fill = sentimiento)) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Análisis de sentimiento de barreras",
+       x = "Sentimiento", y = " ")+
+  geom_text(aes(label = total),
+            vjust = 1.5, color = "black",
+            size =4) +
+  theme_minimal() + scale_fill_brewer(palette = "Paired") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14,face = "bold"),
+        title = element_text(size=20,face = "bold"),
+        legend.position = "none") 
+        
+  
+sentimientos_barrera 
+```
+
+
+
+
+```{r}
+#grafico de sentimientos de barreras: positivo/negativo
+
+
+sentimientos_barrera_binario <- ggplot(emocion.barrera.df[9:10,],
+                        aes(x = sentimiento,
+                            y = total, fill = sentimiento)) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Análisis de sentimiento de barreras P/N",
+       x = "Sentimiento", y = " ")+
+  geom_text(aes(label = total),
+            vjust = 1.5, color = "black",
+            size =4) +
+  theme_minimal() + scale_fill_brewer(palette = "Paired") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14,face = "bold"),
+        title = element_text(size=20,face = "bold"),
+        legend.position = "none") 
+        
+  
+sentimientos_barrera_binario 
 ```
 
 
@@ -569,6 +660,17 @@ palabra.publico.df
 # La función get_nrc_sentiments() aplicada solo a barreras
 sentimientos_df <- get_nrc_sentiment(palabra.publico.df, lang="spanish")
 sentimientos_df |> glimpse()
+```
+
+
+```{r}
+#grafico de sentimientos de publico
+
+```
+
+```{r}
+#grafico de sentimientos de publico: positivo/negativo
+
 ```
 
 
