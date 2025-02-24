@@ -701,7 +701,24 @@ emocion.publico.df
 ```{r}
 #grafico de sentimientos de publico
 
-
+sentimientos_publico <- ggplot(emocion.publico.df[1:8,],
+                        aes(x = sentimiento,
+                            y = total, fill = sentimiento)) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Análisis de sentimiento de de difusion al público",
+       x = "Sentimiento", y = " ")+
+  geom_text(aes(label = total),
+            vjust = 1.5, color = "black",
+            size =4) +
+  theme_minimal() + scale_fill_brewer(palette = "Paired") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14,face = "bold"),
+        title = element_text(size= 16,face = "bold"),
+        legend.position = "none") 
+        
+  
+sentimientos_publico
 
 ```
 
@@ -723,7 +740,7 @@ sentimientos_publico_binario <- ggplot(emocion.publico.df[9:10,],
   theme(plot.title = element_text(hjust = 0.5),
         axis.text = element_text(size=12),
         axis.title = element_text(size=14,face = "bold"),
-        title = element_text(size=16,face = "bold"),
+        title = element_text(size= 16,face = "bold"),
         legend.position = "none") 
         
   
