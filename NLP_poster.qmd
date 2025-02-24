@@ -29,10 +29,11 @@ quitar_tildes <- function(str) {
 # Datos
 datos <- read_sheet("1ZaaZFXhc9KfQgpWehNpl6Qyam-49O2nHS786fKrXFCw", sheet = "info_inscriptos")
 
-datos <- datos |> filter(
+datos <- datos |> 
+  filter(
   (is.na(interes_ES) | interes_ES != "Interesse na ciência aberta.") &
-  (is.na(barreras_ES) | !str_detect(barreras_ES, "that will limit us to work openly, in those NDA they mention"))
-)
+  (is.na(barreras_ES) | !str_detect(barreras_ES, "that will limit us to work openly, in those NDA they mention")) &
+  (is.na(barreras_ES) | !str_detect(interes_ES, "I understand Spanish well but have difficulty writing in the language")))
 
 
 
@@ -48,9 +49,6 @@ texto_libre <- datos %>%
          barreras_ES,
          publico_general_ES)
 
-datos$interes_ES <- quitar_tildes(datos$interes_ES)
-datos$publico_general_ES <- quitar_tildes(datos$publico_general_ES)
-datos$barreras_ES <- quitar_tildes(datos$barreras_ES)
 ```
 
 ### Tokenización
@@ -104,24 +102,49 @@ tok_all <- texto_libre %>%
   filter(!word %in% stopwords("es"))
 
 tok_all %>% glimpse()
+
+
 ```
-### Eliminar Ciencia Abierta de la tokenización
+
+
+## Obtener el lema o forma canónica de la palabra
 
 ```{r}
 
-tok_barreras_sin_CA <- tok_barreras |> 
-  filter(!word %in% c("ciencia", "abierta"))
+# Descargar y cargar un modelo para español
+modelo <- udpipe_download_model(language = "spanish")
+modelo <- udpipe_load_model(modelo$file_model)
 
-tok_interes_sin_CA <- tok_interes |> 
-  filter(!word %in% c("ciencia", "abierta"))
 
-tok_public_sin_CA <- tok_public |> 
-  filter(!word %in% c("ciencia", "abierta"))
+# Anotar el texto
+anotaciones <- udpipe_annotate(modelo, x = tok_all$word)
+anotaciones_df <- as.data.frame(anotaciones)
 
-tok_all_sin_CA <- tok_all |> 
-  filter(!word %in% c("ciencia", "abierta"))
+anotaciones_df |> 
+  filter(is.na(lemma)) |> 
+  select(token, lemma)
+
+
+anotaciones_df <- anotaciones_df %>%
+  mutate(token = quitar_tildes(token)) |> 
+  mutate(lemma = case_when(is.na(lemma) & str_detect(token, "rlos$|rlas$|rlo$|rla$|rle$|rse$|rles$|rnos$|rme$") ~ str_remove(token, "los$|las$|lo$|la$|le$|se$|les$|nos$|me$"),
+                           is.na(lemma) & str_detect(token, "andome$") ~ str_replace(token, pattern = "andome$", replacement = "ar"),
+                           is.na(lemma) & str_detect(token, "endome$") ~ str_replace(token, pattern = "endome$", replacement = "r"),
+                           is.na(lemma) & str_detect(token, "andose$") ~ str_replace(token, pattern = "andose$", replacement = "ar"),
+                           is.na(lemma) & str_detect(token, "andola$") ~ str_replace(token, pattern = "andose$", replacement = "ar"),
+                           is.na(lemma) & str_detect(token, "poniendose") ~ "poner",
+                           is.na(lemma) & str_detect(token, "prrfeccionarme") ~ "perfeccionar",
+                           is.na(lemma) & str_detect(token, "desarrolar") ~ "desarrollar",
+                           TRUE ~ lemma)) |> 
+  select(word = token, lemma)
+
+
+tok_all <- tok_all |> 
+  mutate(word = quitar_tildes(word)) |> 
+  left_join(anotaciones_df, by = "word")
 
 ```
+
 
 
 ### Conteo de frecuencias
@@ -134,7 +157,10 @@ tok_c_barreras <- tok_barreras %>% count(document, word)
 tok_c_public <- tok_public %>% count(document, word)
 
 tok_c_all <- tok_all %>% count(document, word)
+
 ```
+
+
 
 ### DTM
 
