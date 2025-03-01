@@ -31,10 +31,17 @@ quitar_tildes <- function(str) {
 datos <- read_sheet("1vvWC52QmhQNRTOrueGP9FtBDeGOwBDr-t95fb34gwGk", sheet = "info_inscriptos")
 
 datos <- datos |> 
+  
+  # EXCLUIR RTAS NO ESP
   filter(
   (is.na(interes_ES) | interes_ES != "Interesse na ciência aberta.") &
   (is.na(barreras_ES) | !str_detect(barreras_ES, "that will limit us to work openly, in those NDA they mention")) &
-  (is.na(barreras_ES) | !str_detect(interes_ES, "I understand Spanish well but have difficulty writing in the language")))
+  (is.na(barreras_ES) | !str_detect(interes_ES, "I understand Spanish well but have difficulty writing in the language"))) %>% 
+  
+  # REMOVER TILDES
+  mutate(interes_ES = quitar_tildes(interes_ES),
+         barreras_ES = quitar_tildes(barreras_ES),
+         publico_general_ES = quitar_tildes(publico_general_ES))
 
 
 
@@ -54,6 +61,16 @@ texto_libre <- datos %>%
 
 ### Tokenización
 
+Cargo modelo de lematización
+```{r}
+# Descargar y cargar un modelo para español
+lematizador <- udpipe_download_model(language = "spanish")
+lematizador <- udpipe_load_model(lematizador$file_model)
+```
+
+
+#### Interés
+
 ```{r}
 # tok_interes: campo con interes por ciencia abierta 
 
@@ -63,10 +80,23 @@ tok_interes <- texto_libre %>%
   select(interes_ES) %>% 
   unnest_tokens(word, interes_ES) %>% 
   filter(!word %in% stopwords("es")) %>% 
-  mutate(document = "interes_ES")
+  mutate(document = "interes_ES") %>% 
+  mutate(stem = wordStem(word, "spanish")) #STEMMING
+
+lematizador_tok_interes <- udpipe_annotate(lematizador, x = tok_interes$word) %>% 
+  as.data.frame() %>%
+  group_by(doc_id) %>%
+  mutate(n = n()) %>% # Contamos cuántas veces aparece cada id
+  filter(n == 1 | row_number() == 2) %>% # Nos quedamos con los únicos o el segundo duplicado
+  select(-n) %>% # Quitamos la columna auxiliar
+  ungroup()
+
+tok_interes$lema <- lematizador_tok_interes$lemma
 
 tok_interes %>% glimpse()
 ```
+
+#### Barreras
 
 ```{r}
 # tok_barreras: campo con barreras encontradas en ciencia abierta 
@@ -76,10 +106,23 @@ tok_barreras <- texto_libre %>%
   select(barreras_ES) %>% 
   unnest_tokens(word, barreras_ES) %>% 
   filter(!word %in% stopwords("es")) %>% 
-  mutate(document = "barreras_ES")
+  mutate(document = "barreras_ES") %>% 
+  mutate(stem = wordStem(word, "spanish")) #STEMMING
+
+lematizador_tok_barreras <- udpipe_annotate(lematizador, x = tok_barreras$word) %>% 
+  as.data.frame() %>%
+  group_by(doc_id) %>%
+  mutate(n = n()) %>% # Contamos cuántas veces aparece cada id
+  filter(n == 1 | row_number() == 2) %>% # Nos quedamos con los únicos o el segundo duplicado
+  select(-n) %>% # Quitamos la columna auxiliar
+  ungroup()
+
+tok_barreras$lema <- lematizador_tok_barreras$lemma
 
 tok_barreras %>% glimpse()
 ```
+
+#### Public
 
 ```{r}
 
@@ -90,11 +133,24 @@ tok_public <- texto_libre %>%
   select(publico_general_ES) %>% 
   unnest_tokens(word, publico_general_ES)  %>% 
   filter(!word %in% stopwords("es")) %>% 
-  mutate(document = "publico_general_ES")
+  mutate(document = "publico_general_ES") %>% 
+  mutate(stem = wordStem(word, "spanish")) #STEMMING
 
+lematizador_tok_public <- udpipe_annotate(lematizador, x = tok_public$word) %>% 
+  as.data.frame() %>%
+  group_by(doc_id) %>%
+  mutate(n = n()) %>% # Contamos cuántas veces aparece cada id
+  filter(n == 1 | row_number() == 2) %>% # Nos quedamos con los únicos o el segundo duplicado
+  select(-n) %>% # Quitamos la columna auxiliar
+  ungroup()
+
+tok_public$lema <- lematizador_tok_public$lemma
 
 tok_public %>% glimpse()
+
 ```
+
+#### All
 
 ```{r}
 # todo el texto junto
@@ -104,75 +160,69 @@ tok_all <- texto_libre %>%
   filter(!is.na(text)) %>%
   rename(document = name) %>% 
   unnest_tokens(word, text) %>% 
-  filter(!word %in% stopwords("es"))
+  filter(!word %in% stopwords("es")) %>% 
+  mutate(stem = wordStem(word, "spanish")) #STEMMING
+
+lematizador_tok_all <- udpipe_annotate(lematizador, x = tok_all$word) %>% 
+  as.data.frame() %>%
+  group_by(doc_id) %>%
+  mutate(n = n()) %>% # Contamos cuántas veces aparece cada id
+  filter(n == 1 | row_number() == 2) %>% # Nos quedamos con los únicos o el segundo duplicado
+  select(-n) %>% # Quitamos la columna auxiliar
+  ungroup()
+
+tok_all$lema <- lematizador_tok_all$lemma
 
 tok_all %>% glimpse()
 
 
 ```
-### Stemming con snoball
+
+
 
 ```{r}
 
-tok_all = tok_all %>% 
-  mutate(stem = wordStem(word, "spanish"))
-
-tok_all |> 
-  filter(is.na(stem))
-
-
-
-```
-
-
-
-### Obtener el lema o forma canónica de la palabra
-
-```{r}
-
-# Descargar y cargar un modelo para español
-modelo <- udpipe_download_model(language = "spanish")
-modelo <- udpipe_load_model(modelo$file_model)
-
-
-# Anotar el texto
-anotaciones <- udpipe_annotate(modelo, x = tok_all$word)
-anotaciones_df <- as.data.frame(anotaciones)
-
-anotaciones_df |> 
-  filter(is.na(lemma)) |> 
-  select(token, lemma)
-
-
-anotaciones_df <- anotaciones_df %>%
-  mutate(token = quitar_tildes(token)) |> 
-  mutate(lemma = case_when(is.na(lemma) & str_detect(token, "rlos$|rlas$|rlo$|rla$|rle$|rse$|rles$|rnos$|rme$") ~ str_remove(token, "los$|las$|lo$|la$|le$|se$|les$|nos$|me$"),
-                           is.na(lemma) & str_detect(token, "andome$") ~ str_replace(token, pattern = "andome$", replacement = "ar"),
-                           is.na(lemma) & str_detect(token, "endome$") ~ str_replace(token, pattern = "endome$", replacement = "r"),
-                           is.na(lemma) & str_detect(token, "andose$") ~ str_replace(token, pattern = "andose$", replacement = "ar"),
-                           is.na(lemma) & str_detect(token, "andola$") ~ str_replace(token, pattern = "andose$", replacement = "ar"),
-                           is.na(lemma) & str_detect(token, "poniendose") ~ "poner",
-                           is.na(lemma) & str_detect(token, "prrfeccionarme") ~ "perfeccionar",
-                           is.na(lemma) & str_detect(token, "desarrolar") ~ "desarrollar",
-                           TRUE ~ lemma)) |> 
-  select(word = token, lemma)
-
-
-tok_all <- tok_all |> 
-  mutate(word = quitar_tildes(word)) |> 
-  left_join(anotaciones_df, by = "word")
-
-## Detected an unexpected many-to-many relationship between `x` and `y`.
-
-tok_all |> 
-  filter(is.na(lemma)) |> 
-  select(word, lemma)
+# 
+# 
+# 
+# # Anotar el texto
+# anotaciones <- udpipe_annotate(lematizador, x = tok_all$word)
+# anotaciones_df <- as.data.frame(anotaciones)
+# 
+# anotaciones_df |> 
+#   filter(is.na(lemma)) |> 
+#   select(token, lemma)
+# 
+# 
+# anotaciones_df <- anotaciones_df %>%
+#   mutate(token = quitar_tildes(token)) |> 
+#   mutate(lemma = case_when(is.na(lemma) & str_detect(token, "rlos$|rlas$|rlo$|rla$|rle$|rse$|rles$|rnos$|rme$") ~ str_remove(token, "los$|las$|lo$|la$|le$|se$|les$|nos$|me$"),
+#                            is.na(lemma) & str_detect(token, "andome$") ~ str_replace(token, pattern = "andome$", replacement = "ar"),
+#                            is.na(lemma) & str_detect(token, "endome$") ~ str_replace(token, pattern = "endome$", replacement = "r"),
+#                            is.na(lemma) & str_detect(token, "andose$") ~ str_replace(token, pattern = "andose$", replacement = "ar"),
+#                            is.na(lemma) & str_detect(token, "andola$") ~ str_replace(token, pattern = "andose$", replacement = "ar"),
+#                            is.na(lemma) & str_detect(token, "poniendose") ~ "poner",
+#                            is.na(lemma) & str_detect(token, "prrfeccionarme") ~ "perfeccionar",
+#                            is.na(lemma) & str_detect(token, "desarrolar") ~ "desarrollar",
+#                            TRUE ~ lemma)) |> 
+#   select(word = token, lemma)
+# 
+# 
+# tok_all <- tok_all |> 
+#   mutate(word = quitar_tildes(word)) |> 
+#   left_join(anotaciones_df, by = "word")
+# 
+# ## Detected an unexpected many-to-many relationship between `x` and `y`.
+# 
+# tok_all |> 
+#   filter(is.na(lemma)) |> 
+#   select(word, lemma)
 
 ```
-
-
 
 ### Conteo de frecuencias
+
+#### Sin procesar
 
 ```{r}
 tok_c_interes <- tok_interes %>% count(document, word)
@@ -185,9 +235,32 @@ tok_c_all <- tok_all %>% count(document, word)
 
 ```
 
+#### Lemming stemming
+
+```{r}
+tok_c_interes_stem <- tok_interes %>% count(document, stem)
+
+tok_c_barreras_stem <- tok_barreras %>% count(document, stem)
+
+tok_c_public_stem <- tok_public %>% count(document, stem)
+
+tok_c_all_stem <- tok_all %>% count(document, stem)
+```
+
+```{r}
+tok_c_interes_lem <- tok_interes %>% count(document, lema)
+
+tok_c_barreras_lem <- tok_barreras %>% count(document, lema)
+
+tok_c_public_lem <- tok_public %>% count(document, lema)
+
+tok_c_all_lem <- tok_all %>% count(document, lema)
+```
 
 
 ### DTM
+
+#### Sin procesar
 
 ```{r}
 dtm_interes <- tok_c_interes %>% 
@@ -203,34 +276,50 @@ dtm_all <- tok_c_all %>%
   cast_dtm(document, word, n)
 ```
 
-## Análisis de frecuencias
+#### Lemming stemming
 
 ```{r}
+dtm_interes_lem <- tok_c_interes_lem %>% 
+  cast_dtm(document, lema, n)
 
-tok_c_all_sw <- tok_c_all |>
-  filter(!word %in% stopwords("es")) |>
+dtm_barreras_lem <- tok_c_barreras_lem %>% 
+  cast_dtm(document, lema, n)
+
+dtm_public_lem <- tok_c_public_lem %>% 
+  cast_dtm(document, lema, n)
+
+dtm_all_lem <- tok_c_all_lem %>% 
+  cast_dtm(document, lema, n)
+```
+
+
+## Análisis de frecuencias
+
+### Sin procesar
+
+```{r}
+tok_c_all <- tok_c_all %>% 
   arrange(desc(n))
 
-total_words <- tok_c_all_sw %>% 
+total_words <- tok_c_all %>% 
   group_by(document) %>% 
   summarize(total = sum(n))
 
-tok_c_all_sw <- left_join(tok_c_all_sw, total_words)
+tok_c_all <- left_join(tok_c_all, total_words)
 
-tok_c_all_sw
+tok_c_all
 ```
 
 ```{r}
-tok_c_all_sw |>
+tok_c_all |>
   ggplot(aes(n/total, fill = document)) +
   geom_histogram(show.legend = FALSE) +
-  xlim(NA, 0.0009) +
-  facet_wrap(~document, ncol = 2, scales = "free_y")
+  facet_wrap(~document, ncol = 2, scales = "free")
 ```
 
 ```{r}
 
-freq_by_rank <- tok_c_all_sw %>% 
+freq_by_rank <- tok_c_all %>% 
   group_by(document) %>% 
   mutate(rank = row_number(), 
          term_frequency = n/total) %>%
@@ -266,7 +355,7 @@ freq_by_rank %>%
 ```
 
 ```{r}
-tf_idf <- tok_c_all_sw %>%
+tf_idf <- tok_c_all %>%
   bind_tf_idf(word, document, n)
 
 tf_idf |>
@@ -280,6 +369,164 @@ tf_idf %>%
   slice_max(tf_idf, n = 15) %>%
   ungroup() %>%
   ggplot(aes(tf_idf, fct_reorder(word, tf_idf), fill = document)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~document, ncol = 2, scales = "free") +
+  labs(x = "tf-idf", y = NULL)
+```
+
+### Lemming
+
+```{r}
+tok_c_all_lem <- tok_c_all_lem %>% 
+  arrange(desc(n))
+
+total_words_lem <- tok_c_all_lem %>% 
+  group_by(document) %>% 
+  summarize(total = sum(n))
+
+tok_c_all_lem <- left_join(tok_c_all_lem, total_words_lem)
+
+tok_c_all_lem
+```
+
+```{r}
+tok_c_all_lem |>
+  ggplot(aes(n/total, fill = document)) +
+  geom_histogram(show.legend = FALSE) +
+  facet_wrap(~document, ncol = 2, scales = "free")
+```
+
+```{r}
+
+freq_by_rank_lem <- tok_c_all_lem %>% 
+  group_by(document) %>% 
+  mutate(rank = row_number(), 
+         term_frequency = n/total) %>%
+  ungroup()
+
+freq_by_rank_lem
+```
+
+```{r}
+freq_by_rank_lem %>% 
+  ggplot(aes(rank, term_frequency, color = document)) + 
+  geom_line(linewidth = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+```{r}
+rank_subset_lem <- freq_by_rank_lem %>% 
+  filter(rank < 500,
+         rank > 10)
+
+lm(log10(term_frequency) ~ log10(rank), data = rank_subset_lem)
+```
+
+```{r}
+freq_by_rank_lem %>% 
+  ggplot(aes(rank, term_frequency, color = document)) + 
+  geom_abline(intercept = -0.62, slope = -1.1, 
+              color = "gray50", linetype = 2) +
+  geom_line(linewidth = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+```{r}
+tf_idf_lem <- tok_c_all_lem %>%
+  bind_tf_idf(lema, document, n)
+
+tf_idf_lem |>
+  select(-total) |>
+  arrange(desc(tf_idf))
+```
+
+```{r}
+tf_idf_lem %>%
+  group_by(document) %>%
+  slice_max(tf_idf, n = 15) %>%
+  ungroup() %>%
+  ggplot(aes(tf_idf, fct_reorder(lema, tf_idf), fill = document)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~document, ncol = 2, scales = "free") +
+  labs(x = "tf-idf", y = NULL)
+```
+
+### Stemming
+
+```{r}
+tok_c_all_stem <- tok_c_all_stem %>% 
+  arrange(desc(n))
+
+total_words_stem <- tok_c_all_stem %>% 
+  group_by(document) %>% 
+  summarize(total = sum(n))
+
+tok_c_all_stem <- left_join(tok_c_all_stem, total_words_stem)
+
+tok_c_all_stem
+```
+
+```{r}
+tok_c_all_stem |>
+  ggplot(aes(n/total, fill = document)) +
+  geom_histogram(show.legend = FALSE) +
+  facet_wrap(~document, ncol = 2, scales = "free")
+```
+
+```{r}
+
+freq_by_rank_stem <- tok_c_all_stem %>% 
+  group_by(document) %>% 
+  mutate(rank = row_number(), 
+         term_frequency = n/total) %>%
+  ungroup()
+
+freq_by_rank_stem
+```
+
+```{r}
+freq_by_rank_stem %>% 
+  ggplot(aes(rank, term_frequency, color = document)) + 
+  geom_line(linewidth = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+```{r}
+rank_subset_stem <- freq_by_rank %>% 
+  filter(rank < 500,
+         rank > 10)
+
+lm(log10(term_frequency) ~ log10(rank), data = rank_subset_stem)
+```
+
+```{r}
+freq_by_rank_stem %>% 
+  ggplot(aes(rank, term_frequency, color = document)) + 
+  geom_abline(intercept = -0.62, slope = -1.1, 
+              color = "gray50", linetype = 2) +
+  geom_line(linewidth = 1.1, alpha = 0.8, show.legend = FALSE) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+```{r}
+tf_idf_stem <- tok_c_all_stem %>%
+  bind_tf_idf(stem, document, n)
+
+tf_idf_stem |>
+  select(-total) |>
+  arrange(desc(tf_idf))
+```
+
+```{r}
+tf_idf_stem %>%
+  group_by(document) %>%
+  slice_max(tf_idf, n = 15) %>%
+  ungroup() %>%
+  ggplot(aes(tf_idf, fct_reorder(stem, tf_idf), fill = document)) +
   geom_col(show.legend = FALSE) +
   facet_wrap(~document, ncol = 2, scales = "free") +
   labs(x = "tf-idf", y = NULL)
