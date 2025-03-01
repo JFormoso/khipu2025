@@ -532,6 +532,73 @@ tf_idf_stem %>%
   labs(x = "tf-idf", y = NULL)
 ```
 
+## Bigramas
+
+## Bigramas y correlaciones
+
+```{r}
+
+bigrams_all <- texto_libre %>% 
+  mutate_all(str_to_lower) |>
+  mutate_all(quitar_tildes) |> 
+  mutate_all(str_remove_all, "ciencia abierta") |> 
+  mutate(barreras_ES = str_remove_all(barreras_ES, "barrera|barreras"),
+         interes_ES = str_remove_all(interes_ES, "interes|interesa|interesante|interesar"),
+         publico_general_ES = str_remove_all(publico_general_ES, "publico general")) |> 
+  pivot_longer(cols = interes_ES:publico_general_ES,
+               values_to = "text") %>% 
+  filter(!is.na(text)) %>%
+  rename(document = name) %>%
+  unnest_tokens(bigram, text, token = "ngrams", n = 2) %>%
+  filter(!is.na(bigram)) 
+
+bigrams_all %>%
+  count(bigram, sort = TRUE)
+
+bigrams_separated <- bigrams_all %>%
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+bigrams_filtered <- bigrams_separated %>%
+  filter(!word1 %in% stopwords("es")) %>%
+  filter(!word2 %in% stopwords("es"))
+
+# new bigram counts:
+bigram_counts <- bigrams_filtered %>% 
+  count(word1, word2, sort = TRUE)
+
+bigram_counts
+
+```
+
+```{r}
+bigrams_united <- bigrams_filtered %>%
+  unite(bigram, word1, word2, sep = " ")
+
+bigrams_united |> 
+  count(document, bigram, sort = TRUE) |> 
+  filter(document == "barreras_ES") |> 
+  head(5)
+
+bigrams_united |> 
+  count(document, bigram, sort = TRUE) |> 
+  filter(document == "interes_ES") |> 
+  head(5)
+
+bigrams_united |> 
+  count(document, bigram, sort = TRUE) |> 
+  filter(document == "publico_general_ES") |> 
+  head(5)
+
+bigram_tf_idf <- bigrams_united %>%
+  count(document, bigram) %>%
+  bind_tf_idf(bigram, document, n) %>%
+  arrange(desc(tf_idf))
+
+bigram_tf_idf
+
+```
+
+
 ## Análisis de sentimiento
 
 ```{r}
