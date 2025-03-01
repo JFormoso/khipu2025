@@ -17,6 +17,7 @@ library(topicmodels)
 library(tm)
 library(udpipe)
 library(syuzhet)
+library(SnowballC)
 
 quitar_tildes <- function(str) {
   return(stringi::stri_trans_general(str, "Latin-ASCII"))
@@ -58,6 +59,7 @@ texto_libre <- datos %>%
 
 
 tok_interes <- texto_libre %>%
+  filter(!is.na(interes_ES)) %>%
   select(interes_ES) %>% 
   unnest_tokens(word, interes_ES) %>% 
   filter(!word %in% stopwords("es")) %>% 
@@ -70,6 +72,7 @@ tok_interes %>% glimpse()
 # tok_barreras: campo con barreras encontradas en ciencia abierta 
 
 tok_barreras <- texto_libre %>%
+  filter(!is.na(barreras_ES)) %>%
   select(barreras_ES) %>% 
   unnest_tokens(word, barreras_ES) %>% 
   filter(!word %in% stopwords("es")) %>% 
@@ -83,6 +86,7 @@ tok_barreras %>% glimpse()
 # tok_public:campo con incidencia de ciencia abierta en publico en general
 
 tok_public <- texto_libre %>%
+  filter(!is.na(publico_general_ES)) %>%
   select(publico_general_ES) %>% 
   unnest_tokens(word, publico_general_ES)  %>% 
   filter(!word %in% stopwords("es")) %>% 
@@ -97,6 +101,7 @@ tok_public %>% glimpse()
 tok_all <- texto_libre %>% 
   pivot_longer(cols = interes_ES:publico_general_ES,
                values_to = "text") %>% 
+  filter(!is.na(text)) %>%
   rename(document = name) %>% 
   unnest_tokens(word, text) %>% 
   filter(!word %in% stopwords("es"))
@@ -105,9 +110,23 @@ tok_all %>% glimpse()
 
 
 ```
+### Stemming con snoball
+
+```{r}
+
+tok_all = tok_all %>% 
+  mutate(stem = wordStem(word, "spanish"))
+
+tok_all |> 
+  filter(is.na(stem))
 
 
-## Obtener el lema o forma canónica de la palabra
+
+```
+
+
+
+### Obtener el lema o forma canónica de la palabra
 
 ```{r}
 
@@ -142,6 +161,12 @@ anotaciones_df <- anotaciones_df %>%
 tok_all <- tok_all |> 
   mutate(word = quitar_tildes(word)) |> 
   left_join(anotaciones_df, by = "word")
+
+## Detected an unexpected many-to-many relationship between `x` and `y`.
+
+tok_all |> 
+  filter(is.na(lemma)) |> 
+  select(word, lemma)
 
 ```
 
