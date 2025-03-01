@@ -292,6 +292,19 @@ dtm_all_lem <- tok_c_all_lem %>%
   cast_dtm(document, lema, n)
 ```
 
+```{r}
+dtm_interes_stem <- tok_c_interes_stem %>% 
+  cast_dtm(document, stem, n)
+
+dtm_barreras_stem <- tok_c_barreras_stem %>% 
+  cast_dtm(document, stem, n)
+
+dtm_public_stem <- tok_c_public_stem %>% 
+  cast_dtm(document, stem, n)
+
+dtm_all_stem <- tok_c_all_stem %>% 
+  cast_dtm(document, stem, n)
+```
 
 ## Análisis de frecuencias
 
@@ -699,6 +712,7 @@ sentimientos1
 
 ## Modelado de tópicos
 
+### Sin procesar
 DTM
 
 ```{r}
@@ -824,4 +838,262 @@ beta_wide_public <- topics_public %>%
   filter(topic1 > .001 | topic2 > .001) %>%
   mutate(log_ratio = log2(topic2 / topic1))
 beta_wide_public
+```
+
+### Lemming
+
+DTM
+
+```{r}
+lda_all <- LDA(dtm_all, k = 2, control = list(seed = 1234))
+topics_all <- tidy(lda_all)
+```
+
+```{r}
+all_top_terms <- topics_all %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+all_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+beta_wide_all <- topics_all %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+beta_wide_all
+```
+
+#### Barreras
+
+```{r}
+lda_barreras_lem <- LDA(dtm_barreras_lem, k = 2, control = list(seed = 1234))
+topics_barreras_lem <- tidy(lda_barreras_lem)
+```
+
+```{r}
+barreras_top_terms_lem <- topics_barreras_lem %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+barreras_top_terms_lem %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+beta_wide_barreras_lem <- topics_barreras_lem %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+
+beta_wide_barreras_lem
+```
+
+#### Interes
+
+```{r}
+lda_interes_lem <- LDA(dtm_interes_lem, k = 2, control = list(seed = 1234))
+topics_interes_lem <- tidy(lda_interes_lem)
+```
+
+```{r}
+interes_top_terms_lem <- topics_interes_lem %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+
+#### DTM
+
+interes_top_terms_lem %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+beta_wide_interes_lem <- topics_interes_lem %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+beta_wide_interes_lem
+```
+
+#### Public
+
+```{r}
+lda_public_lem <- LDA(dtm_public_lem, k = 2, control = list(seed = 1234))
+topics_public_lem <- tidy(lda_public_lem)
+```
+
+```{r}
+public_top_terms_lem <- topics_public_lem %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+public_top_terms_lem %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+beta_wide_public_lem <- topics_public_lem %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+beta_wide_public_lem
+```
+
+### Stemming
+DTM
+
+```{r}
+lda_all_stem <- LDA(dtm_all_stem, k = 3, control = list(seed = 1234))
+topics_all_stem <- tidy(lda_all_stem)
+```
+
+```{r}
+all_top_terms_stem <- topics_all_stem %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+all_top_terms_stem %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+beta_wide_all_stem <- topics_all_stem %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+beta_wide_all_stem
+```
+
+#### Barreras
+
+```{r}
+lda_barreras_stem <- LDA(dtm_barreras_stem, k = 3, control = list(seed = 1234))
+topics_barreras_stem <- tidy(lda_barreras_stem)
+```
+
+```{r}
+barreras_top_terms_stem <- topics_barreras_stem %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+barreras_top_terms_stem %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+beta_wide_barreras_stem <- topics_barreras_stem %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+beta_wide_barreras_stem
+```
+
+#### Interes
+
+```{r}
+lda_interes_stem <- LDA(dtm_interes_stem, k = 2, control = list(seed = 1234))
+topics_interes_stem <- tidy(lda_interes_stem)
+```
+
+```{r}
+interes_top_terms_stem <- topics_interes_stem %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+
+#### DTM
+
+interes_top_terms_stem %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+beta_wide_interes_stem <- topics_interes_stem %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+beta_wide_interes_stem
+```
+
+#### Public
+
+```{r}
+lda_public_stem <- LDA(dtm_public_stem, k = 3, control = list(seed = 1234))
+topics_public_stem <- tidy(lda_public_stem)
+```
+
+```{r}
+public_top_terms_stem <- topics_public_stem %>%
+  group_by(topic) %>%
+  slice_max(beta, n = 10) %>% 
+  ungroup() %>%
+  arrange(topic, -beta)
+
+public_top_terms_stem %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+beta_wide_public_stem <- topics_public_stem %>%
+  mutate(topic = paste0("topic", topic)) %>%
+  pivot_wider(names_from = topic, values_from = beta) %>% 
+  filter(topic1 > .001 | topic2 > .001) %>%
+  mutate(log_ratio = log2(topic2 / topic1))
+beta_wide_public_stem
 ```
