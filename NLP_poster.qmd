@@ -1176,7 +1176,7 @@ beta_wide_barreras
 #### Interes
 
 ```{r}
-lda_interes <- LDA(dtm_interes, k = 2, control = list(seed = 1234))
+lda_interes <- LDA(dtm_interes, k = 3, control = list(seed = 1234))
 topics_interes <- tidy(lda_interes)
 ```
 
@@ -1210,7 +1210,7 @@ beta_wide_interes
 #### Public
 
 ```{r}
-lda_public <- LDA(dtm_public, k = 2, control = list(seed = 1234))
+lda_public <- LDA(dtm_public, k = 3, control = list(seed = 1234))
 topics_public <- tidy(lda_public)
 ```
 
@@ -1243,7 +1243,7 @@ beta_wide_public
 DTM
 
 ```{r}
-lda_all <- LDA(dtm_all, k = 2, control = list(seed = 1234))
+lda_all <- LDA(dtm_all, k = 3, control = list(seed = 1234))
 topics_all <- tidy(lda_all)
 ```
 
@@ -1340,7 +1340,7 @@ beta_wide_interes_lem
 #### Public
 
 ```{r}
-lda_public_lem <- LDA(dtm_public_lem, k = 2, control = list(seed = 1234))
+lda_public_lem <- LDA(dtm_public_lem, k = 3, control = list(seed = 1234))
 topics_public_lem <- tidy(lda_public_lem)
 ```
 
@@ -1434,7 +1434,7 @@ beta_wide_barreras_stem
 #### Interes
 
 ```{r}
-lda_interes_stem <- LDA(dtm_interes_stem, k = 2, control = list(seed = 1234))
+lda_interes_stem <- LDA(dtm_interes_stem, k = 3, control = list(seed = 1234))
 topics_interes_stem <- tidy(lda_interes_stem)
 ```
 
