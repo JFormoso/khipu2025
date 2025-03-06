@@ -756,7 +756,7 @@ sentimientos_binario
 
 ```
 
-#### Stemming 
+#### Análisis de sentimientos luego de aplicar la técnica de Stemming al texto completo
 
 ```{r}
 palabra_stem.df <- as.vector(tok_all_sin_sw$stem)
@@ -862,7 +862,7 @@ sentimientos_binario
 ```
 
 
-#### Lemming
+#### Análisis de sentimientos luego de aplicar la técnica de lematización al texto completo
 
 ```{r}
 palabra_lem.df <- as.vector(tok_all_sin_sw$lema)
@@ -946,7 +946,7 @@ sentimientos_total_lem
 
 #grafico de sentimientos de interes: positivo/negativo
 
-sentimientos_binario <- ggplot(emocion_con_lem[9:10,],
+sentimientos_binario_lem <- ggplot(emocion_con_lem[9:10,],
                         aes(x = sentimiento,
                             y = total, fill = sentimiento)) + 
   geom_bar(stat = "identity") +
@@ -963,7 +963,7 @@ sentimientos_binario <- ggplot(emocion_con_lem[9:10,],
         legend.position = "none") 
         
   
-sentimientos_binario 
+sentimientos_binario_lem 
 
 ```
 
