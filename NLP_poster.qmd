@@ -1290,26 +1290,24 @@ sentimientos_barrera_binario <- ggplot(emocion.barrera.df[9:10,],
 sentimientos_barrera_binario 
 ```
 
-##  Análisis de la sección Barreras con Stemming
+###  Análisis de la sección Barreras con Stemming
 
-
-###  Análisis de la sección Interes con Stemming
 
 ```{r}
-tok_interes %>% glimpse()
+tok_barreras %>% glimpse()
 ```
 
 ```{r}
-interes_stem <- as.vector(tok_interes$stem)
-interes_stem
+barreras_stem <- as.vector(tok_barreras$stem)
+barreras_stem
 ```
 
 ```{r}
 # procesamiento utilizando solo los perminos luego de aplicar stemming
 # La función get_nrc_sentiments() nos permite obtener léxicos de sentimientos específicos
 
-sentimientos_stem_interes <- get_nrc_sentiment(interes_stem, lang="spanish")
-sentimientos_stem_interes |> glimpse()
+sentimientos_stem_barreras <- get_nrc_sentiment(barreras_stem, lang="spanish")
+sentimientos_stem_barreras |> glimpse()
 ```
 
 ```{r}
@@ -1318,45 +1316,43 @@ sentimientos_stem_interes |> glimpse()
 #se aplicó la función get_nrc_sentiment en cada una de ellas
 
 
-df_stem_interes <- cbind(interes_stem, sentimientos_stem_interes)
-head(df_stem_interes)
+df_stem_barreras <- cbind(barreras_stem, sentimientos_stem_barreras)
+head(df_stem_barreras)
 
 #Creamos un data frame en el cual las filas serán las emociones
 #y las columnas los puntajes totales
 
 #Empezamos transponiendo sentimientos_df
-emocion_interes_stem <- data.frame(t(sentimientos_stem_interes))
-emocion_interes_stem
+emocion_barreras_stem <- data.frame(t(sentimientos_stem_barreras))
+emocion_barreras_stem
 
 #Sumamos los puntajes de cada emocion
-emocion_interes_stem <- data.frame(rowSums(emocion_interes_stem))
+emocion_barreras_stem <- data.frame(rowSums(emocion_barreras_stem))
 
 #Nombramos la columna de puntajes como total
-names(emocion_interes_stem)[1] <- "total"
-
-
+names(emocion_barreras_stem)[1] <- "total"
 
 #Dado que las emociones son los nombres de las filas y no una variable
 #transformamos el data frame para incluirlas dentro
-emocion_interes_stem <- cbind("sentimiento" = rownames(emocion_interes_stem), emocion_interes_stem)
-emocion_interes_stem
+emocion_barreras_stem <- cbind("sentimiento" = rownames(emocion_barreras_stem), emocion_barreras_stem)
+emocion_barreras_stem
 
 #Quitamos el nombre de las filas
-rownames(emocion_interes_stem) <- NULL
+rownames(emocion_barreras_stem) <- NULL
 
 #Verificamos el data frame
-print(emocion_interes_stem)
-emocion_interes_stem
+print(emocion_barreras_stem)
+emocion_barreras_stem
 ```
 
 
 ```{r}
 
-grafico_interes_stem <- ggplot(emocion_interes_stem[1:8,],
+grafico_barreras_stem <- ggplot(emocion_barreras_stem[1:8,],
                         aes(x = sentimiento,
                             y = total, fill = sentimiento)) + 
   geom_bar(stat = "identity") +
-  labs(title = "Análisis de sentimiento de la sección interés luego de aplicar stemming",
+  labs(title = "Análisis de sentimiento de la sección barreras luego de aplicar stemming",
        x = "Sentimiento", y = " ")+
   geom_text(aes(label = total),
             vjust = 1.5, color = "black",
@@ -1369,7 +1365,7 @@ grafico_interes_stem <- ggplot(emocion_interes_stem[1:8,],
         legend.position = "none") 
         
   
-grafico_interes_stem 
+grafico_barreras_stem 
 
 ```
 
@@ -1379,11 +1375,11 @@ grafico_interes_stem
 
 #grafico de sentimientos de interes: positivo/negativo
 
-grafico_binario_interes_stem <- ggplot(emocion_interes_stem[9:10,],
+grafico_binario_barreras_stem <- ggplot(emocion_barreras_stem[9:10,],
                         aes(x = sentimiento,
                             y = total, fill = sentimiento)) + 
   geom_bar(stat = "identity") +
-  labs(title = "Análisis de sentimiento P/N de la sección interés con stemming",
+  labs(title = "Análisis de sentimiento P/N de la sección barreras con stemming",
        x = "Sentimiento", y = " ")+
   geom_text(aes(label = total),
             vjust = 1.5, color = "black",
@@ -1396,7 +1392,7 @@ grafico_binario_interes_stem <- ggplot(emocion_interes_stem[9:10,],
         legend.position = "none") 
         
   
-grafico_binario_interes_stem 
+grafico_binario_barreras_stem 
 
 ```
 
