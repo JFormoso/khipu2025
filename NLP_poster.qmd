@@ -371,7 +371,7 @@ freq_by_rank %>%
 
 ```{r}
 tf_idf <- tok_c_all %>%
-  bind_tf_idf(lema, document, n)
+  bind_tf_idf(word, document, n)
 
 tf_idf |>
   select(-total) |>
@@ -475,7 +475,7 @@ facetas <- c(barreras_ES = "Barriers",
 
 tf_idf_lem %>%
   group_by(document) %>%
-  slice_max(tf_idf, n = 15) %>%
+  slice_max(tf_idf, n = 10) %>%
   ungroup() %>%
   ggplot(aes(tf_idf, fct_reorder(lema, tf_idf), fill = document)) +
   geom_col(show.legend = FALSE) +
@@ -484,6 +484,10 @@ tf_idf_lem %>%
   scale_fill_manual(values = cols, labels = c("Barriers", "Interest", "General public")) +
   theme_minimal() +
   theme(panel.grid = element_blank())
+
+ggsave("td-idf.png", width = 7, height = 2, dpi = 300)
+
+
 ```
 
 ### Stemming
@@ -567,8 +571,6 @@ tf_idf_stem %>%
 
 ## Bigramas
 
-## Bigramas y correlaciones
-
 ```{r}
 
 bigrams_all <- texto_libre %>% 
@@ -627,7 +629,19 @@ bigram_tf_idf <- bigrams_united %>%
   bind_tf_idf(bigram, document, n) %>%
   arrange(desc(tf_idf))
 
-bigram_tf_idf
+bigram_tf_idf |>
+  group_by(document) %>%
+  slice_max(tf_idf, n = 10) %>%
+  ungroup() %>%
+  ggplot(aes(tf_idf, fct_reorder(lema, tf_idf), fill = document)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~document, ncol = 3, scales = "free", labeller = as_labeller(facetas)) +
+  labs(x = "tf-idf", y = NULL) +
+  scale_fill_manual(values = cols, labels = c("Barriers", "Interest", "General public")) +
+  theme_minimal() +
+  theme(panel.grid = element_blank())
+
+ggsave("td-idf.png", width = 7, height = 2, dpi = 300)
 
 ```
 
