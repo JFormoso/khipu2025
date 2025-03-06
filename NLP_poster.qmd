@@ -371,7 +371,7 @@ freq_by_rank %>%
 
 ```{r}
 tf_idf <- tok_c_all %>%
-  bind_tf_idf(word, document, n)
+  bind_tf_idf(lema, document, n)
 
 tf_idf |>
   select(-total) |>
@@ -392,20 +392,28 @@ tf_idf %>%
 ### Lemming
 
 ```{r}
-tok_c_all_lem <- tok_c_all_lem %>% 
-  arrange(desc(n))
+tok_c_all_lem_filtrado <- tok_c_all_lem %>% 
+  mutate(filtrado = case_when(document == "barrera_ES" & lema == "barrera" ~ 1,
+                              document == "publico_general_ES" & lema %in% c("publico", "general") ~ 1,
+                              document == "interes_ES" & str_detect(lema, "^interes|^querer") ~ 1,
+                              lema == "abierta" ~ 1,
+                              lema == "ciencia" ~ 1,
+                              TRUE ~ 0)) |>
+  filter(filtrado == 0) |>
+  arrange(desc(n)) |>
+  select(-filtrado)
 
-total_words_lem <- tok_c_all_lem %>% 
+total_words_lem_filtrado <- tok_c_all_lem_filtrado %>% 
   group_by(document) %>% 
   summarize(total = sum(n))
 
-tok_c_all_lem <- left_join(tok_c_all_lem, total_words_lem)
+tok_c_all_lem_filtrado <- left_join(tok_c_all_lem_filtrado, total_words_lem_filtrado)
 
-tok_c_all_lem
+tok_c_all_lem_filtrado
 ```
 
 ```{r}
-tok_c_all_lem |>
+tok_c_all_lem_filtrado |>
   ggplot(aes(n/total, fill = document)) +
   geom_histogram(show.legend = FALSE) +
   facet_wrap(~document, ncol = 2, scales = "free")
@@ -413,7 +421,7 @@ tok_c_all_lem |>
 
 ```{r}
 
-freq_by_rank_lem <- tok_c_all_lem %>% 
+freq_by_rank_lem <- tok_c_all_lem_filtrado %>% 
   group_by(document) %>% 
   mutate(rank = row_number(), 
          term_frequency = n/total) %>%
@@ -449,7 +457,7 @@ freq_by_rank_lem %>%
 ```
 
 ```{r}
-tf_idf_lem <- tok_c_all_lem %>%
+tf_idf_lem <- tok_c_all_lem_filtrado %>%
   bind_tf_idf(lema, document, n)
 
 tf_idf_lem |>
@@ -458,14 +466,24 @@ tf_idf_lem |>
 ```
 
 ```{r}
+
+cols <- c("barreras_ES" = "#f67a21ff", "interes_ES" = "#00506fff", "publico_general_ES" = "#c63838ff")
+
+facetas <- c(barreras_ES = "Barriers",
+             publico_general_ES = "General public",
+             interes_ES = "Interest")
+
 tf_idf_lem %>%
   group_by(document) %>%
   slice_max(tf_idf, n = 15) %>%
   ungroup() %>%
   ggplot(aes(tf_idf, fct_reorder(lema, tf_idf), fill = document)) +
   geom_col(show.legend = FALSE) +
-  facet_wrap(~document, ncol = 2, scales = "free") +
-  labs(x = "tf-idf", y = NULL)
+  facet_wrap(~document, ncol = 3, scales = "free", labeller = as_labeller(facetas)) +
+  labs(x = "tf-idf", y = NULL) +
+  scale_fill_manual(values = cols, labels = c("Barriers", "Interest", "General public")) +
+  theme_minimal() +
+  theme(panel.grid = element_blank())
 ```
 
 ### Stemming
