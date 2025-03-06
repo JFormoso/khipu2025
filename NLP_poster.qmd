@@ -1,4 +1,4 @@
-2---
+---
 title: "Consideraciones sobre la Ciencia Abierta de investigadores e investigadoras del sur global : un análisis desde herramientas de NLP"
 author: "Formoso, J., Nanton, M. C., Loto, P. A."
 format: html
@@ -617,15 +617,12 @@ bigram_tf_idf
 ## Análisis de sentimiento
 
 ```{r}
-
-tok_all <- texto_libre %>%
-  pivot_longer(cols = interes_ES:publico_general_ES,
-               values_to = "text") %>%
-  rename(document = name) %>%
-  unnest_tokens(word, text)
-
-tok_all |> glimpse()
+# solo para verificar el contenido de tok_all
+tok_all %>% glimpse()
 ```
+
+
+#### Sin procesar
 
 ```{r}
 # elimino las stopwords
@@ -638,18 +635,28 @@ tok_all_sin_sw <- tok_all |>
    filter(!word %in% ("NA")) |>
    filter(!is.na(word))
      
-
-  
-  
 tok_all_sin_sw |> glimpse()
 
 ```
 
+```{r}
+# no entiendo para qué
+# tok_all <- texto_libre %>%
+#   pivot_longer(cols = interes_ES:publico_general_ES,
+#                values_to = "text") %>%
+#   rename(document = name) %>%
+#   unnest_tokens(word, text)
+# 
+# tok_all %>% glimpse()
+
+# no entiendo para qué
+```
 
 ```{r}
 palabra.df <- as.vector(tok_all_sin_sw$word)
 palabra.df
 ```
+
 
 ```{r}
 # La función get_nrc_sentiments() nos permite obtener léxicos de sentimientos específicos
@@ -657,6 +664,7 @@ palabra.df
 sentimientos_df <- get_nrc_sentiment(palabra.df, lang="spanish")
 sentimientos_df |> glimpse()
 ```
+
 
 ```{r}
 
@@ -693,10 +701,9 @@ rownames(emocion.df3) <- NULL
 #Verificamos el data frame
 print(emocion.df3)
 emocion.df3
-
-
-
 ```
+
+
 
 ```{r}
 library("RColorBrewer")
@@ -721,6 +728,219 @@ sentimientos_total <- ggplot(emocion.df3[1:8,],
 sentimientos_total 
 
 ```
+
+
+```{r}
+
+
+#grafico de sentimientos de interes: positivo/negativo
+
+sentimientos_binario <- ggplot(emocion.df3[9:10,],
+                        aes(x = sentimiento,
+                            y = total, fill = sentimiento)) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Análisis de sentimiento del texto completo",
+       x = "Sentimiento", y = " ")+
+  geom_text(aes(label = total),
+            vjust = 1.5, color = "black",
+            size =4) +
+  theme_minimal() + scale_fill_brewer(palette = "Paired") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14,face = "bold"),
+        title = element_text(size=18,face = "bold"),
+        legend.position = "none") 
+        
+  
+sentimientos_binario 
+
+```
+
+#### Stemming 
+
+```{r}
+palabra_stem.df <- as.vector(tok_all_sin_sw$stem)
+palabra_stem.df
+```
+
+```{r}
+# procesamiento utilizando solo los perminos luego de aplicar stemming
+# La función get_nrc_sentiments() nos permite obtener léxicos de sentimientos específicos
+
+sentimientos_stem_df <- get_nrc_sentiment(palabra_stem.df, lang="spanish")
+sentimientos_stem_df |> glimpse()
+```
+
+
+```{r}
+
+#Unimos sentimientos_df con el vector de palabras  para ver como
+#se aplicó la función get_nrc_sentiment en cada una de ellas
+
+
+df_stem <- cbind(palabra_stem.df, sentimientos_stem_df)
+head(df_stem)
+
+#Creamos un data frame en el cual las filas serán las emociones
+#y las columnas los puntajes totales
+
+#Empezamos transponiendo sentimientos_df
+emocion_com_stem <- data.frame(t(sentimientos_stem_df))
+emocion_com_stem
+
+#Sumamos los puntajes de cada emocion
+emocion_com_stem <- data.frame(rowSums(emocion_com_stem))
+
+#Nombramos la columna de puntajes como total
+names(emocion_com_stem)[1] <- "total"
+
+
+
+#Dado que las emociones son los nombres de las filas y no una variable
+#transformamos el data frame para incluirlas dentro
+emocion_com_stem <- cbind("sentimiento" = rownames(emocion_com_stem), emocion_com_stem)
+emocion_com_stem
+
+#Quitamos el nombre de las filas
+rownames(emocion_com_stem) <- NULL
+
+#Verificamos el data frame
+print(emocion_com_stem)
+emocion_com_stem
+```
+
+
+```{r}
+library("RColorBrewer")
+
+sentimientos_total_stem <- ggplot(emocion_com_stem[1:8,],
+                        aes(x = sentimiento,
+                            y = total, fill = sentimiento)) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Análisis de sentimiento de palabras luego de aplicar stemming",
+       x = "Sentimiento", y = " ")+
+  geom_text(aes(label = total),
+            vjust = 1.5, color = "black",
+            size =4) +
+  theme_minimal() + scale_fill_brewer(palette = "Pastel1") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text = element_text(size= 12),
+        axis.title = element_text(size= 14,face = "bold"),
+        title = element_text(size= 12 ,face = "bold"),
+        legend.position = "none") 
+        
+  
+sentimientos_total_stem 
+
+```
+
+
+```{r}
+
+
+#grafico de sentimientos de interes: positivo/negativo
+
+sentimientos_binario <- ggplot(emocion_com_stem[9:10,],
+                        aes(x = sentimiento,
+                            y = total, fill = sentimiento)) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Análisis de sentimiento P/N del texto completo con stemming",
+       x = "Sentimiento", y = " ")+
+  geom_text(aes(label = total),
+            vjust = 1.5, color = "black",
+            size =4) +
+  theme_minimal() + scale_fill_brewer(palette = "Paired") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text = element_text(size= 12),
+        axis.title = element_text(size= 14,face = "bold"),
+        title = element_text(size= 12,face = "bold"),
+        legend.position = "none") 
+        
+  
+sentimientos_binario 
+
+```
+
+
+#### Lemming
+
+```{r}
+palabra_lem.df <- as.vector(tok_all_sin_sw$lema)
+palabra_lem.df
+```
+
+```{r}
+# La función get_nrc_sentiments() nos permite obtener léxicos de sentimientos específicos
+
+sentimientos_df <- get_nrc_sentiment(palabra.df, lang="spanish")
+sentimientos_df |> glimpse()
+```
+
+
+```{r}
+
+#Unimos sentimientos_df con el vector de palabras  para ver como
+#se aplicó la función get_nrc_sentiment en cada una de ellas
+
+
+df2 <- cbind(palabra.df, sentimientos_df)
+head(df2)
+
+#Creamos un data frame en el cual las filas serán las emociones
+#y las columnas los puntajes totales
+
+#Empezamos transponiendo sentimientos_df
+emocion.df3 <- data.frame(t(sentimientos_df))
+emocion.df3
+
+#Sumamos los puntajes de cada emocion
+emocion.df3 <- data.frame(rowSums(emocion.df3))
+
+#Nombramos la columna de puntajes como total
+names(emocion.df3)[1] <- "total"
+
+
+
+#Dado que las emociones son los nombres de las filas y no una variable
+#transformamos el data frame para incluirlas dentro
+emocion.df3 <- cbind("sentimiento" = rownames(emocion.df3), emocion.df3)
+emocion.df3
+
+#Quitamos el nombre de las filas
+rownames(emocion.df3) <- NULL
+
+#Verificamos el data frame
+print(emocion.df3)
+emocion.df3
+```
+
+
+
+```{r}
+library("RColorBrewer")
+
+sentimientos_total <- ggplot(emocion.df3[1:8,],
+                        aes(x = sentimiento,
+                            y = total, fill = sentimiento)) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Análisis de sentimiento",
+       x = "Sentimiento", y = " ")+
+  geom_text(aes(label = total),
+            vjust = 1.5, color = "black",
+            size =4) +
+  theme_minimal() + scale_fill_brewer(palette = "Paired") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14,face = "bold"),
+        title = element_text(size=20,face = "bold"),
+        legend.position = "none") 
+        
+  
+sentimientos_total 
+
+```
+
+
 ```{r}
 
 
@@ -750,6 +970,9 @@ sentimientos_binario
 
 
 
+#### Análisis de sentimientos por secciones 
+
+## Sin procesamiento extra
 
 ```{r}
 # análisis de sentimiento de la sección Interes
