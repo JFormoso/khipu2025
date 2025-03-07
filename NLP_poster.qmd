@@ -18,6 +18,7 @@ library(tm)
 library(udpipe)
 library(syuzhet)
 library(SnowballC)
+library(readxl)
 
 quitar_tildes <- function(str) {
   return(stringi::stri_trans_general(str, "Latin-ASCII"))
@@ -30,9 +31,11 @@ quitar_tildes <- function(str) {
 # Datos
 datos <- read_sheet("1vvWC52QmhQNRTOrueGP9FtBDeGOwBDr-t95fb34gwGk", sheet = "info_inscriptos")
 
-datos <- datos |> 
+# datos <- read_xlsx(path = "khipu2025.xlsx", sheet = "info_inscriptos") 
   
-  # EXCLUIR RTAS NO ESP
+# EXCLUIR RTAS NO ESP
+
+datos <- datos %>% 
   filter(
   (is.na(interes_ES) | interes_ES != "Interesse na ciência aberta.") &
   (is.na(barreras_ES) | !str_detect(barreras_ES, "that will limit us to work openly, in those NDA they mention")) &
@@ -42,10 +45,6 @@ datos <- datos |>
   mutate(interes_ES = quitar_tildes(interes_ES),
          barreras_ES = quitar_tildes(barreras_ES),
          publico_general_ES = quitar_tildes(publico_general_ES))
-
-
-
-
 ```
 
 ## Procesamientos base
@@ -181,45 +180,6 @@ tok_all %>% glimpse()
 
 
 
-```{r}
-
-# 
-# 
-# 
-# # Anotar el texto
-# anotaciones <- udpipe_annotate(lematizador, x = tok_all$word)
-# anotaciones_df <- as.data.frame(anotaciones)
-# 
-# anotaciones_df |> 
-#   filter(is.na(lemma)) |> 
-#   select(token, lemma)
-# 
-# 
-# anotaciones_df <- anotaciones_df %>%
-#   mutate(token = quitar_tildes(token)) |> 
-#   mutate(lemma = case_when(is.na(lemma) & str_detect(token, "rlos$|rlas$|rlo$|rla$|rle$|rse$|rles$|rnos$|rme$") ~ str_remove(token, "los$|las$|lo$|la$|le$|se$|les$|nos$|me$"),
-#                            is.na(lemma) & str_detect(token, "andome$") ~ str_replace(token, pattern = "andome$", replacement = "ar"),
-#                            is.na(lemma) & str_detect(token, "endome$") ~ str_replace(token, pattern = "endome$", replacement = "r"),
-#                            is.na(lemma) & str_detect(token, "andose$") ~ str_replace(token, pattern = "andose$", replacement = "ar"),
-#                            is.na(lemma) & str_detect(token, "andola$") ~ str_replace(token, pattern = "andose$", replacement = "ar"),
-#                            is.na(lemma) & str_detect(token, "poniendose") ~ "poner",
-#                            is.na(lemma) & str_detect(token, "prrfeccionarme") ~ "perfeccionar",
-#                            is.na(lemma) & str_detect(token, "desarrolar") ~ "desarrollar",
-#                            TRUE ~ lemma)) |> 
-#   select(word = token, lemma)
-# 
-# 
-# tok_all <- tok_all |> 
-#   mutate(word = quitar_tildes(word)) |> 
-#   left_join(anotaciones_df, by = "word")
-# 
-# ## Detected an unexpected many-to-many relationship between `x` and `y`.
-# 
-# tok_all |> 
-#   filter(is.na(lemma)) |> 
-#   select(word, lemma)
-
-```
 
 ### Conteo de frecuencias
 
@@ -1166,7 +1126,7 @@ sentimientos_interes
 
 
 
-###  Análisis de la sección Interes con Stemming
+###  Análisis de la SECCION INTERES CON STEMMING
 
 ```{r}
 tok_interes %>% glimpse()
@@ -1222,7 +1182,6 @@ print(emocion_interes_stem)
 emocion_interes_stem
 ```
 
-
 ```{r}
 
 grafico_interes_stem <- ggplot(emocion_interes_stem[1:8,],
@@ -1245,6 +1204,61 @@ grafico_interes_stem <- ggplot(emocion_interes_stem[1:8,],
 grafico_interes_stem 
 
 ```
+
+
+### Grafico con colores metadocencia
+
+```{r}
+cols <- c("barreras_ES" = "#f67a21ff", "interes_ES" = "#00506fff", "publico_general_ES" = "#c63838ff")
+facetas <- c(barreras_ES = "Barriers",
+             publico_general_ES = "Public",
+             interes_ES = "Interest")
+```
+
+
+
+```{r}
+# ggplot(aes(tf_idf, fct_reorder(lema, tf_idf)
+grafico_interes_stem <- ggplot(emocion_interes_stem[1:8,],
+                        aes(x = total,
+                            fct_reorder(sentimiento, total), fill = sentimiento)) + 
+    geom_bar(stat = "identity", show.legend = FALSE ) +
+    labs(title = "Interest",
+       x = " ", y = " ") +  #x = "Sentiment Analysis", y = " "
+   theme(plot.title = element_text(hjust = 5.0),
+         axis.text = element_text(size= 12),
+         axis.title = element_text(size= 10),
+         title = element_text(size= 10)) +
+  theme_minimal() + 
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank()) +
+  scale_fill_manual(values= c("#00506fff", "#00506fff","#00506fff", "#00506fff", "#00506fff", "#00506fff", "#00506fff", "#00506fff")) 
+  
+grafico_interes_stem
+
+ggsave("interes_con_stem.png", width = 5, height = 1.7, dpi = 300)
+  
+# tf_idf_lem %>%
+#   group_by(document) %>%
+#   slice_max(tf_idf, n = 10) %>%
+#   ungroup() %>%
+#   ggplot(aes(tf_idf, fct_reorder(lema, tf_idf), fill = document)) +
+#   geom_col(show.legend = FALSE) +
+#   facet_wrap(~document, ncol = 3, scales = "free", labeller = as_labeller(facetas)) +
+#   labs(x = "tf-idf", y = NULL) +
+#   scale_fill_manual(values = cols, labels = c("Barriers", "Interest", "Public")) +
+#   theme_minimal() +
+#   theme(panel.grid = element_blank(),
+#         axis.text.x = element_blank()) +
+#   xlab("TD x IDF")
+
+#ggsave("sentimiento_interes.png", width = 5, height = 1.7, dpi = 300)
+
+
+```
+
+
+
 
 
 ```{r}
@@ -1465,6 +1479,38 @@ grafico_barreras_stem
 ```
 
 
+### Grafico Barreras con colores de metadocencia
+
+```{r}
+
+# ggplot(aes(tf_idf, fct_reorder(lema, tf_idf)
+grafico_interes_stem <- ggplot(emocion_barreras_stem[1:8,],
+                        aes(x = total,
+                            fct_reorder(sentimiento, total), fill = sentimiento)) + 
+    geom_bar(stat = "identity", show.legend = FALSE ) +
+    labs(title = "Barriers",
+       x = " ", y = " ") +  #x = "Sentiment Analysis", y = " "
+   theme(plot.title = element_text(hjust = 1.0),
+         axis.text = element_text(size= 12),
+         axis.title = element_text(size= 10),
+         title = element_text(size= 10)) +
+  theme_minimal() + 
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank()) +
+  scale_fill_manual(values= c("#f67a21ff", "#f67a21ff","#f67a21ff", "#f67a21ff", "#f67a21ff", "#f67a21ff", "#f67a21ff", "#f67a21ff")) 
+  
+grafico_interes_stem
+
+ggsave("barreras_con_stem.png", width = 5, height = 1.7, dpi = 300)
+  
+
+
+```
+
+
+
+
+
 ```{r}
 
 
@@ -1631,12 +1677,7 @@ sentimientos_stem_publi <- get_nrc_sentiment(publico_stem, lang="spanish")
 sentimientos_stem_publi |> glimpse()
 ```
 
-
 ```{r}
-
-#Unimos sentimientos_df con el vector de palabras  para ver como
-#se aplicó la función get_nrc_sentiment en cada una de ellas
-
 
 df_stem_publi <- cbind(publico_stem, sentimientos_stem_publi)
 head(df_stem_publi)
@@ -1692,6 +1733,32 @@ grafico_publi_stem <- ggplot(emocion_publi_stem[1:8,],
 grafico_publi_stem 
 
 ```
+
+
+###
+
+```{r}
+grafico_publico_stem <- ggplot(emocion_publi_stem[1:8,],
+                        aes(x = total,
+                            fct_reorder(sentimiento, total), fill = sentimiento)) + 
+    geom_bar(stat = "identity", show.legend = FALSE ) +
+    labs(title = "Public",
+       x = " ", y = " ") +  #x = "Sentiment Analysis", y = " "
+   theme(plot.title = element_text(hjust = 5.0),
+         axis.text = element_text(size= 12),
+         axis.title = element_text(size= 10),
+         title = element_text(size= 10)) +
+  theme_minimal() + 
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_blank()) +
+  scale_fill_manual(values= c("#c63838ff", "#c63838ff","#c63838ff", "#c63838ff", "#c63838ff", "#c63838ff", "#c63838ff", "#c63838ff")) 
+  
+grafico_publico_stem
+
+ggsave("publico_con_stem.png", width = 5, height = 1.7, dpi = 300)
+```
+
+
 
 
 ```{r}
